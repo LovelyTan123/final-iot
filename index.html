@@ -2,18 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hydroponics Monitoring Dashboard</title>
+
+  <!-- Bootstrap & Chart.js -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="module" src="app.js"></script>
-</head>
-<body class="bg-light">
 
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+  <!-- Custom Styling -->
+  <style>
+    body {
+      background-color: #1e1e2f;
+      color: #f5f5f5;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .navbar {
+      background-color: #0d6efd;
+    }
+
+    .navbar-brand, .nav-link {
+      color: #fff !important;
+    }
+
+    .card {
+      background-color: #2c2f48;
+      border: none;
+      color: #ffffff;
+    }
+
+    .nav-tabs .nav-link.active {
+      background-color: #0d6efd;
+      color: #fff;
+    }
+
+    .nav-tabs .nav-link {
+      color: #ccc;
+    }
+
+    table {
+      background-color: #2c2f48;
+      color: #fff;
+    }
+
+    th {
+      background-color: #0d6efd;
+      color: #fff;
+    }
+
+    .section-header {
+      border-bottom: 2px solid #0d6efd;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .tab-pane {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#">Hydroponics Monitor</a>
+      <a class="navbar-brand" href="#">🌿 Hydroponics Dashboard</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -30,16 +83,22 @@
     </div>
   </nav>
 
-  <!-- About Us Section -->
+  <!-- About Us -->
   <div id="about" class="container my-5">
-    <h2 class="text-center">About Us</h2>
-    <p class="text-center">We are dedicated to providing a real-time hydroponics monitoring system using IoT and Firebase. This dashboard tracks light, motion, temperature, and humidity to ensure optimal growing conditions.</p>
+    <div class="section-header">
+      <h2>About Us</h2>
+    </div>
+    <p>
+      Welcome to the Hydroponics Monitoring Dashboard. This system is developed to track and analyze real-time sensor data such as light, motion, temperature, and humidity for efficient and smart farming. The platform provides insights to ensure the optimal growth environment for your plants.
+    </p>
   </div>
 
-  <!-- Latest Readings -->
-  <div class="container mt-4">
-    <h4 class="text-center mb-4">Latest Sensor Readings</h4>
-    <div class="row text-center">
+  <!-- Live Dashboard -->
+  <div class="container mt-5">
+    <div class="section-header">
+      <h3>🔍 Live Sensor Readings</h3>
+    </div>
+    <div class="row text-center g-3">
       <div class="col-md-2">
         <div class="card p-3 shadow-sm">
           <h6>Light</h6>
@@ -74,29 +133,34 @@
 
     <!-- Chart Section -->
     <div class="mt-5">
-      <h4 class="text-center mb-3">Latest 10 Readings</h4>
+      <h4 class="text-center mb-3">📈 Last 10 Sensor Readings</h4>
       <canvas id="historyChart" height="100"></canvas>
     </div>
   </div>
 
-  <!-- Sensor Navigation Tabs -->
+  <!-- Sensor Data Tabs -->
   <div class="container mt-5">
+    <div class="section-header">
+      <h3>📊 Sensor Data History</h3>
+    </div>
+
     <ul class="nav nav-tabs" id="sensorTabs" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="light-tab" data-bs-toggle="tab" data-bs-target="#lightTab" type="button" role="tab">Light</button>
+        <button class="nav-link active" id="light-tab" data-bs-toggle="tab" data-bs-target="#lightTab" type="button">Light</button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="motion-tab" data-bs-toggle="tab" data-bs-target="#motionTab" type="button" role="tab">Motion</button>
+        <button class="nav-link" id="motion-tab" data-bs-toggle="tab" data-bs-target="#motionTab" type="button">Motion</button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="temp-tab" data-bs-toggle="tab" data-bs-target="#tempTab" type="button" role="tab">Temperature & Humidity</button>
+        <button class="nav-link" id="temp-tab" data-bs-toggle="tab" data-bs-target="#tempTab" type="button">Temperature & Humidity</button>
       </li>
     </ul>
-    <div class="tab-content mt-3">
+
+    <div class="tab-content">
       <!-- Light Tab -->
       <div class="tab-pane fade show active" id="lightTab" role="tabpanel">
-        <h5>Light Sensor Data</h5>
-        <table class="table table-bordered table-striped">
+        <h5 class="mt-3">Light Sensor Data</h5>
+        <table class="table table-bordered">
           <thead>
             <tr>
               <th>Timestamp</th>
@@ -105,15 +169,15 @@
             </tr>
           </thead>
           <tbody id="lightTable">
-            <!-- Filled by JS -->
+            <!-- Dynamic content -->
           </tbody>
         </table>
       </div>
 
       <!-- Motion Tab -->
       <div class="tab-pane fade" id="motionTab" role="tabpanel">
-        <h5>Motion Sensor Data</h5>
-        <table class="table table-bordered table-striped">
+        <h5 class="mt-3">Motion Sensor Data</h5>
+        <table class="table table-bordered">
           <thead>
             <tr>
               <th>Timestamp</th>
@@ -121,15 +185,15 @@
             </tr>
           </thead>
           <tbody id="motionTable">
-            <!-- Filled by JS -->
+            <!-- Dynamic content -->
           </tbody>
         </table>
       </div>
 
       <!-- Temperature & Humidity Tab -->
       <div class="tab-pane fade" id="tempTab" role="tabpanel">
-        <h5>Temperature & Humidity Data</h5>
-        <table class="table table-bordered table-striped">
+        <h5 class="mt-3">Temperature & Humidity Data</h5>
+        <table class="table table-bordered">
           <thead>
             <tr>
               <th>Timestamp</th>
@@ -138,13 +202,14 @@
             </tr>
           </thead>
           <tbody id="tempHumTable">
-            <!-- Filled by JS -->
+            <!-- Dynamic content -->
           </tbody>
         </table>
       </div>
     </div>
   </div>
 
+  <!-- Bootstrap Script -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
