@@ -14,11 +14,31 @@
   <nav class="navbar navbar-expand-lg navbar-dark bg-success">
     <div class="container-fluid">
       <a class="navbar-brand" href="#">Hydroponics Monitor</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="#">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#about">About Us</a>
+          </li>
+        </ul>
+      </div>
     </div>
   </nav>
 
-  <!-- Dashboard -->
+  <!-- About Us Section -->
+  <div id="about" class="container my-5">
+    <h2 class="text-center">About Us</h2>
+    <p class="text-center">We are dedicated to providing a real-time hydroponics monitoring system using IoT and Firebase. This dashboard tracks light, motion, temperature, and humidity to ensure optimal growing conditions.</p>
+  </div>
+
+  <!-- Latest Readings -->
   <div class="container mt-4">
+    <h4 class="text-center mb-4">Latest Sensor Readings</h4>
     <div class="row text-center">
       <div class="col-md-2">
         <div class="card p-3 shadow-sm">
@@ -59,5 +79,72 @@
     </div>
   </div>
 
+  <!-- Sensor Navigation Tabs -->
+  <div class="container mt-5">
+    <ul class="nav nav-tabs" id="sensorTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="light-tab" data-bs-toggle="tab" data-bs-target="#lightTab" type="button" role="tab">Light</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="motion-tab" data-bs-toggle="tab" data-bs-target="#motionTab" type="button" role="tab">Motion</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="temp-tab" data-bs-toggle="tab" data-bs-target="#tempTab" type="button" role="tab">Temperature & Humidity</button>
+      </li>
+    </ul>
+    <div class="tab-content mt-3">
+      <!-- Light Tab -->
+      <div class="tab-pane fade show active" id="lightTab" role="tabpanel">
+        <h5>Light Sensor Data</h5>
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Light Status</th>
+              <th>Light Intensity</th>
+            </tr>
+          </thead>
+          <tbody id="lightTable">
+            <!-- Filled by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Motion Tab -->
+      <div class="tab-pane fade" id="motionTab" role="tabpanel">
+        <h5>Motion Sensor Data</h5>
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Motion Detected</th>
+            </tr>
+          </thead>
+          <tbody id="motionTable">
+            <!-- Filled by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Temperature & Humidity Tab -->
+      <div class="tab-pane fade" id="tempTab" role="tabpanel">
+        <h5>Temperature & Humidity Data</h5>
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Temperature (°C)</th>
+              <th>Humidity (%)</th>
+            </tr>
+          </thead>
+          <tbody id="tempHumTable">
+            <!-- Filled by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
