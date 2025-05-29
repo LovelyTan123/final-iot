@@ -243,8 +243,17 @@
     let sensorData = []; // Array to store sensor data
 
     function formatTime(timestamp) {
-      const date = new Date(timestamp);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      // Handle both timestamp formats (ISO string and custom format from ESP32)
+      try {
+        const date = new Date(timestamp);
+        if (isNaN(date.getTime())) {
+          // If timestamp is in ESP32 format (YYYY-MM-DD HH:MM:SS)
+          return timestamp;
+        }
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } catch (e) {
+        return timestamp;
+      }
     }
 
     function showDashboard() {
@@ -275,9 +284,9 @@
         case 'motion': 
           return String(value).toLowerCase().includes('detected') ? 'DETECTED' : 'NOT DETECTED';
         case 'temperature': 
-          return isNaN(parseFloat(value)) ? null : (parseFloat(value) / 10).toFixed(1);
+          return isNaN(parseFloat(value)) ? null : parseFloat(value).toFixed(1);
         case 'humidity': 
-          return isNaN(parseFloat(value)) ? null : (parseFloat(value) / 100).toFixed(1);
+          return isNaN(parseFloat(value)) ? null : parseFloat(value).toFixed(1);
         case 'lightIntensity': 
           return isNaN(parseFloat(value)) ? null : parseFloat(value).toFixed(0);
         default: 
@@ -300,10 +309,16 @@
             humidity: value.humidity,
             lightIntensity: value.lightIntensity
           };
-        }).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        }).sort((a, b) => {
+          // Sort by timestamp, handling both formats
+          const timeA = new Date(a.timestamp).getTime();
+          const timeB = new Date(b.timestamp).getTime();
+          return timeA - timeB;
+        });
 
         // Get the latest reading
         const latest = entries[entries.length - 1];
+        if (!latest) return; // No data available
         
         // Update UI with processed values
         const processedLight = processSensorValue(latest.light, 'light');
@@ -462,7 +477,7 @@
 
     // Initial fetch and set up periodic updates
     fetchSensorData();
-    setInterval(fetchSensorData, 1000); // Update every second for real-time data
+    setInterval(fetchSensorData, 2000); // Update every 2 seconds to match ESP32 interval
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
