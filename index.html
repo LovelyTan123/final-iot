@@ -287,7 +287,7 @@
 
     async function fetchSensorData() {
       try {
-        const response = await fetch(${dbUrl}?time=${Date.now()});
+        const response = await fetch(`${dbUrl}?time=${Date.now()}`);
         const data = await response.json();
 
         // Convert object to array of entries and sort by timestamp
@@ -308,17 +308,17 @@
         // Update UI with processed values
         const processedLight = processSensorValue(latest.light, 'light');
         lightEl.textContent = processedLight || "N/A";
-        lightEl.className = sensor-value ${processedLight === 'ACTIVE' ? 'light-active' : 'light-inactive'};
+        lightEl.className = `sensor-value ${processedLight === 'ACTIVE' ? 'light-active' : 'light-inactive'}`;
         
         const processedMotion = processSensorValue(latest.motion, 'motion');
         motionEl.textContent = processedMotion || "N/A";
-        motionEl.className = sensor-value ${processedMotion === 'DETECTED' ? 'motion-detected' : 'motion-not-detected'};
+        motionEl.className = `sensor-value ${processedMotion === 'DETECTED' ? 'motion-detected' : 'motion-not-detected'}`;
         
         const processedTemp = processSensorValue(latest.temperature, 'temperature');
-        tempEl.textContent = processedTemp !== null ? ${processedTemp} °C : "N/A";
+        tempEl.textContent = processedTemp !== null ? `${processedTemp} °C` : "N/A";
         
         const processedHum = processSensorValue(latest.humidity, 'humidity');
-        humEl.textContent = processedHum !== null ? ${processedHum} % : "N/A";
+        humEl.textContent = processedHum !== null ? `${processedHum} %` : "N/A";
         
         const processedLightIntensity = processSensorValue(latest.lightIntensity, 'lightIntensity');
         lightIntensityEl.textContent = processedLightIntensity || "N/A";
