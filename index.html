@@ -338,86 +338,62 @@
       const humData = entries.map(entry => parseFloat(processSensorValue(entry.humidity, 'humidity')));
       const lightIntensityData = entries.map(entry => parseFloat(processSensorValue(entry.lightIntensity, 'lightIntensity')));
 
-      // Destroy existing charts if they exist
+            // Destroy existing charts if they exist
       if (lightChart) lightChart.destroy();
       if (motionChart) motionChart.destroy();
       if (tempHumChart) tempHumChart.destroy();
 
-      // Light Chart
+      // Light Chart (binary: 1 = ACTIVE, 0 = INACTIVE)
       lightChart = new Chart(document.getElementById("lightChart"), {
-        type: "line",
+        type: 'line',
         data: {
-          labels,
-          datasets: [
-            { 
-              label: "Light Status (ACTIVE=1, INACTIVE=0)", 
-              data: lightData, 
-              borderColor: "#facc15", 
-              backgroundColor: "rgba(250, 204, 21, 0.1)",
-              borderWidth: 2,
-              tension: 0.1,
-              fill: true
-            },
-            { 
-              label: "Light Intensity", 
-              data: lightIntensityData, 
-              borderColor: "#0ea5e9", 
-              backgroundColor: "rgba(14, 165, 233, 0.1)",
-              borderWidth: 2,
-              tension: 0.1,
-              fill: true,
-              yAxisID: 'y1'
-            }
-          ]
-        },
-        options: {
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 1,
-              title: {
-                display: true,
-                text: 'Light Status'
-              }
-            },
-            y1: {
-              beginAtZero: true,
-              position: 'right',
-              title: {
-                display: true,
-                text: 'Light Intensity'
-              },
-              grid: {
-                drawOnChartArea: false
-              }
-            }
-          }
-        }
-      });
-
-      // Motion Chart
-      motionChart = new Chart(document.getElementById("motionChart"), {
-        type: "line",
-        data: {
-          labels,
-          datasets: [{ 
-            label: "Motion (1 = DETECTED)", 
-            data: motionData, 
-            borderColor: "#ef4444", 
-            backgroundColor: "rgba(239, 68, 68, 0.1)",
+          labels: labels,
+          datasets: [{
+            label: 'Light Status (1=Active)',
+            data: lightData,
+            backgroundColor: 'rgba(255, 193, 7, 0.2)',
+            borderColor: 'rgba(255, 193, 7, 1)',
             borderWidth: 2,
-            tension: 0.1,
+            tension: 0.4,
             fill: true
           }]
         },
         options: {
           scales: {
             y: {
-              beginAtZero: true,
-              max: 1,
               ticks: {
-                stepSize: 1
-              }
+                callback: (val) => val === 1 ? 'ACTIVE' : 'INACTIVE'
+              },
+              beginAtZero: true,
+              max: 1
+            }
+          }
+        }
+      });
+
+      // Motion Chart (binary: 1 = DETECTED, 0 = NOT DETECTED)
+      motionChart = new Chart(document.getElementById("motionChart"), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Motion (1=Detected)',
+            data: motionData,
+            backgroundColor: 'rgba(76, 175, 80, 0.2)',
+            borderColor: 'rgba(76, 175, 80, 1)',
+            borderWidth: 2,
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              ticks: {
+                callback: (val) => val === 1 ? 'DETECTED' : 'NONE'
+              },
+              beginAtZero: true,
+              max: 1
             }
           }
         }
@@ -425,53 +401,50 @@
 
       // Temperature & Humidity Chart
       tempHumChart = new Chart(document.getElementById("tempHumChart"), {
-        type: "line",
+        type: 'line',
         data: {
-          labels,
+          labels: labels,
           datasets: [
-            { 
-              label: "Temperature (°C)", 
-              data: tempData, 
-              borderColor: "#10b981", 
-              backgroundColor: "rgba(16, 185, 129, 0.1)",
+            {
+              label: 'Temperature (°C)',
+              data: tempData,
+              borderColor: 'rgba(244, 67, 54, 1)',
+              backgroundColor: 'rgba(244, 67, 54, 0.2)',
               borderWidth: 2,
-              tension: 0.1,
-              fill: true
-            },
-            { 
-              label: "Humidity (%)", 
-              data: humData, 
-              borderColor: "#8b5cf6", 
-              backgroundColor: "rgba(139, 92, 246, 0.1)",
-              borderWidth: 2,
-              tension: 0.1,
+              tension: 0.4,
               fill: true,
               yAxisID: 'y1'
+            },
+            {
+              label: 'Humidity (%)',
+              data: humData,
+              borderColor: 'rgba(33, 150, 243, 1)',
+              backgroundColor: 'rgba(33, 150, 243, 0.2)',
+              borderWidth: 2,
+              tension: 0.4,
+              fill: true,
+              yAxisID: 'y2'
             }
           ]
         },
         options: {
           scales: {
-            y: {
-              title: {
-                display: true,
-                text: 'Temperature (°C)'
-              }
-            },
             y1: {
+              type: 'linear',
+              position: 'left',
+              beginAtZero: true
+            },
+            y2: {
+              type: 'linear',
               position: 'right',
-              title: {
-                display: true,
-                text: 'Humidity (%)'
-              },
-              grid: {
-                drawOnChartArea: false
-              }
+              beginAtZero: true,
+              grid: { drawOnChartArea: false }
             }
           }
         }
       });
     }
+
 
     // Initial fetch and set up periodic updates
     fetchSensorData();
