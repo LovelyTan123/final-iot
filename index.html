@@ -3,113 +3,118 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Hydroponics Monitoring Dashboard</title>
+  <title>🌿 Hydroponics Monitoring Dashboard</title>
 
+  <!-- Bootstrap & Chart.js -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  
+  <!-- Google Font for cute look -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
   <style>
     body {
-      background-color: #1e1e2f;
-      color: #f5f5f5;
-      font-family: 'Segoe UI', sans-serif;
+      background: #fef6fb;
+      color: #333;
+      font-family: 'Poppins', sans-serif;
     }
 
     .navbar {
-      background-color: #0d6efd;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      background: linear-gradient(to right, #a1c4fd, #c2e9fb);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
     }
 
-    .navbar-brand, .nav-link {
+    .navbar-brand {
+      font-weight: bold;
       color: #fff !important;
+      font-size: 1.5rem;
+    }
+
+    .nav-link {
+      color: #fff !important;
+      font-weight: 500;
     }
 
     .nav-link:hover {
-      opacity: 0.8;
+      opacity: 0.9;
     }
 
     .card {
-      background-color: #2c2f48;
+      background-color: #ffffff;
       border: none;
-      color: #ffffff;
-      border-radius: 10px;
-      transition: transform 0.2s;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      transition: 0.3s ease;
     }
 
     .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      transform: translateY(-5px);
     }
 
-    .nav-tabs .nav-link.active {
-      background-color: #0d6efd;
-      color: #fff;
-      border-color: #444 #444 #0d6efd;
+    .sensor-value {
+      font-size: 1.6rem;
+      font-weight: bold;
     }
 
-    .nav-tabs .nav-link {
-      color: #ccc;
+    .sensor-label {
+      font-size: 1rem;
+      color: #888;
     }
 
     .section-header {
-      border-bottom: 2px solid #0d6efd;
+      border-bottom: 2px dashed #f8bbd0;
       padding-bottom: 10px;
       margin-bottom: 25px;
       display: flex;
       align-items: center;
+      font-size: 1.4rem;
+      color: #d63384;
     }
 
     canvas {
-      background-color: #2c2f48;
-      padding: 20px;
-      border-radius: 10px;
-      width: 100% !important;
-      height: 400px !important;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      background: #fff;
+      padding: 15px;
+      border-radius: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+
+    .nav-tabs .nav-link {
+      border: none;
+      background: #e0f7fa;
+      margin-right: 5px;
+      border-radius: 15px;
+      color: #00796b;
+      font-weight: 500;
+    }
+
+    .nav-tabs .nav-link.active {
+      background: #4dd0e1;
+      color: #fff;
     }
 
     #about-section {
-      background-color: #2c2f48;
-      border-radius: 10px;
+      background-color: #fff;
+      border-radius: 20px;
       padding: 30px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
       margin-top: 30px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       display: none;
     }
 
-    .sensor-value {
-      font-size: 1.5rem;
-      font-weight: 600;
-    }
-
-    .sensor-label {
-      font-size: 0.9rem;
-      opacity: 0.8;
-    }
-    
-    .motion-detected {
-      color: #4ade80;
-    }
-    
-    .motion-not-detected {
-      color: #f87171;
-    }
-    
-    .light-active {
-      color: #facc15;
-    }
-    
-    .light-inactive {
-      color: #94a3b8;
-    }
+    /* Cute status colors */
+    .motion-detected { color: #66bb6a; }
+    .motion-not-detected { color: #ef5350; }
+    .light-active { color: #ffd54f; }
+    .light-inactive { color: #b0bec5; }
   </style>
 </head>
 <body>
 
+  <!-- Navbar -->
   <nav class="navbar navbar-expand-lg">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#"><i class="fas fa-leaf me-2"></i>🌿 Hydroponics Dashboard</a>
+      <a class="navbar-brand" href="#"><i class="fas fa-seedling me-2"></i>🌱 Hydro Dashboard</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -126,53 +131,50 @@
     </div>
   </nav>
 
+  <!-- Live Sensor Section -->
   <div class="container mt-4" id="dashboard">
-    <div class="section-header">
-      <h3>🔍 Live Sensor Readings</h3>
-    </div>
+    <div class="section-header">📡 Live Sensor Readings</div>
     <div class="row text-center g-4">
       <div class="col-md-2 col-6">
-        <div class="card p-3 shadow-sm">
-          <div class="sensor-label">Light</div>
+        <div class="card p-3">
+          <div class="sensor-label">🌞 Light</div>
           <div id="light" class="sensor-value">Loading...</div>
         </div>
       </div>
       <div class="col-md-2 col-6">
-        <div class="card p-3 shadow-sm">
-          <div class="sensor-label">Light Intensity</div>
+        <div class="card p-3">
+          <div class="sensor-label">🔆 Light Intensity</div>
           <div id="lightIntensity" class="sensor-value">Loading...</div>
         </div>
       </div>
       <div class="col-md-2 col-6">
-        <div class="card p-3 shadow-sm">
-          <div class="sensor-label">Motion</div>
+        <div class="card p-3">
+          <div class="sensor-label">🚶 Motion</div>
           <div id="motion" class="sensor-value">Loading...</div>
         </div>
       </div>
       <div class="col-md-3 col-6">
-        <div class="card p-3 shadow-sm">
-          <div class="sensor-label">Temperature (°C)</div>
+        <div class="card p-3">
+          <div class="sensor-label">🌡️ Temperature (°C)</div>
           <div id="temperature" class="sensor-value">Loading...</div>
         </div>
       </div>
       <div class="col-md-3 col-6">
-        <div class="card p-3 shadow-sm">
-          <div class="sensor-label">Humidity (%)</div>
+        <div class="card p-3">
+          <div class="sensor-label">💧 Humidity (%)</div>
           <div id="humidity" class="sensor-value">Loading...</div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Chart Section -->
   <div class="container mt-5">
-    <div class="section-header">
-      <h3>📊 Sensor Data History</h3>
-    </div>
-
+    <div class="section-header">📊 Sensor Data History</div>
     <ul class="nav nav-tabs">
       <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#lightTab">Light</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#motionTab">Motion</button></li>
-      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tempTab">Temperature & Humidity</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tempTab">Temp & Humidity</button></li>
     </ul>
 
     <div class="tab-content text-center">
@@ -182,32 +184,22 @@
     </div>
   </div>
 
-  <!-- Centered Images with Names and Roles -->
-<div class="text-center mb-4 d-flex justify-content-center gap-4 flex-wrap">
-  <div>
-    <img src="image/santos.jpg" alt="Santos" class="rounded-circle mb-2" width="120" height="120">
-    <div><strong>Victor Santos</strong></div>
-  </div>
-  <div>
-    <img src="image/tan.jpg" alt="Tan" class="rounded-circle mb-2" width="120" height="120">
-    <div><strong>Lovely Tan</strong></div>
-  </div>
-  <div>
-    <img src="image/isidro.jpg" alt="Isidro" class="rounded-circle mb-2" width="120" height="120">
-    <div><strong>Azhly Isidro</strong></div>
-  </div>
-</div>
-
-
+  <!-- About Section -->
   <div class="container" id="about-section">
-    <div class="section-header"><h3>About Us</h3></div>
-   <p class="lead">
-    Welcome to our Hydroponics Monitoring Dashboard! This little system is here to help us keep track of our garden's light, motion, temperature, and humidity with a sprinkle of love and data. 
-  </p>
-  <p>
-    Our mission? Helping plants grow healthy and strong while making our dashboard look fabulous! 🪴
-  </p>
-</div>
+    <div class="section-header">📘 About Us</div>
+    <p class="lead">
+      Welcome to the cute and clever Hydroponics Monitoring Dashboard! 💖 This little system is here to help you keep track of your garden's light, motion, temperature, and humidity with a sprinkle of love and data. 🌈
+    </p>
+    <p>
+      Our mission? Helping plants grow healthy and strong while making your dashboard look fabulous! 🪴✨
+    </p>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Your existing JS logic for Firebase & Chart rendering here -->
+</body>
+</html>
 
   <script>
     const dbUrl = "https://iotfinal-73d37-default-rtdb.asia-southeast1.firebasedatabase.app/sensorData.json";
