@@ -1,125 +1,115 @@
-<!DOCTYPE html>
+make the style cute...<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🌿 Hydroponics Monitoring Dashboard</title>
+  <title>Hydroponics Monitoring Dashboard</title>
 
-  <!-- Bootstrap & Chart.js -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-  
-  <!-- Google Font for cute look -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
   <style>
     body {
-      background: #fef6fb;
-      color: #333;
-      font-family: 'Poppins', sans-serif;
+      background-color: #1e1e2f;
+      color: #f5f5f5;
+      font-family: 'Segoe UI', sans-serif;
     }
 
     .navbar {
-      background: linear-gradient(to right, #a1c4fd, #c2e9fb);
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+      background-color: #0d6efd;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     }
 
-    .navbar-brand {
-      font-weight: bold;
-      color: #080101 !important;
-      font-size: 1.5rem;
-    }
-
-    .nav-link {
+    .navbar-brand, .nav-link {
       color: #fff !important;
-      font-weight: 500;
     }
 
     .nav-link:hover {
-      opacity: 0.9;
+      opacity: 0.8;
     }
 
     .card {
-      background-color: #ffffff;
+      background-color: #2c2f48;
       border: none;
-      border-radius: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      transition: 0.3s ease;
+      color: #ffffff;
+      border-radius: 10px;
+      transition: transform 0.2s;
     }
 
     .card:hover {
-      transform: translateY(-5px);
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     }
 
-    .sensor-value {
-      font-size: 1.6rem;
-      font-weight: bold;
+    .nav-tabs .nav-link.active {
+      background-color: #0d6efd;
+      color: #fff;
+      border-color: #444 #444 #0d6efd;
     }
 
-    .sensor-label {
-      font-size: 1rem;
-      color: #888;
+    .nav-tabs .nav-link {
+      color: #ccc;
     }
 
     .section-header {
-      border-bottom: 2px dashed #f8bbd0;
+      border-bottom: 2px solid #0d6efd;
       padding-bottom: 10px;
       margin-bottom: 25px;
       display: flex;
       align-items: center;
-      font-size: 1.4rem;
-      color: #d63384;
     }
 
     canvas {
-      background: #fff;
-      padding: 15px;
-      border-radius: 20px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-    }
-
-    .nav-tabs .nav-link {
-      border: none;
-      background: #e0f7fa;
-      margin-right: 5px;
-      border-radius: 15px;
-      color: #00796b;
-      font-weight: 500;
-    }
-
-    .nav-tabs .nav-link.active {
-      background: #4dd0e1;
-      color: #fff;
+      background-color: #2c2f48;
+      padding: 20px;
+      border-radius: 10px;
+      width: 100% !important;
+      height: 400px !important;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
     #about-section {
-      background-color: #fff;
-      border-radius: 20px;
+      background-color: #2c2f48;
+      border-radius: 10px;
       padding: 30px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
       margin-top: 30px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       display: none;
     }
-    #about-section img {
-  object-fit: cover;
-  border: 3px solid #c2e9fb;
-}
 
+    .sensor-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
 
-    /* Cute status colors */
-    .motion-detected { color: #66bb6a; }
-    .motion-not-detected { color: #ef5350; }
-    .light-active { color: #ffd54f; }
-    .light-inactive { color: #b0bec5; }
+    .sensor-label {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+    
+    .motion-detected {
+      color: #4ade80;
+    }
+    
+    .motion-not-detected {
+      color: #f87171;
+    }
+    
+    .light-active {
+      color: #facc15;
+    }
+    
+    .light-inactive {
+      color: #94a3b8;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Navbar -->
   <nav class="navbar navbar-expand-lg">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#"><i class="fas fa-seedling me-2"></i>🌱 Hydro Dashboard</a>
+      <a class="navbar-brand" href="#"><i class="fas fa-leaf me-2"></i>🌿 Hydroponics Dashboard</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -136,50 +126,53 @@
     </div>
   </nav>
 
-  <!-- Live Sensor Section -->
   <div class="container mt-4" id="dashboard">
-    <div class="section-header">Latest Sensor Readings</div>
+    <div class="section-header">
+      <h3>🔍 Live Sensor Readings</h3>
+    </div>
     <div class="row text-center g-4">
       <div class="col-md-2 col-6">
-        <div class="card p-3">
-          <div class="sensor-label">🌞 Light</div>
+        <div class="card p-3 shadow-sm">
+          <div class="sensor-label">Light</div>
           <div id="light" class="sensor-value">Loading...</div>
         </div>
       </div>
       <div class="col-md-2 col-6">
-        <div class="card p-3">
-          <div class="sensor-label">🔆 Light Intensity</div>
+        <div class="card p-3 shadow-sm">
+          <div class="sensor-label">Light Intensity</div>
           <div id="lightIntensity" class="sensor-value">Loading...</div>
         </div>
       </div>
       <div class="col-md-2 col-6">
-        <div class="card p-3">
-          <div class="sensor-label">🚶 Motion</div>
+        <div class="card p-3 shadow-sm">
+          <div class="sensor-label">Motion</div>
           <div id="motion" class="sensor-value">Loading...</div>
         </div>
       </div>
       <div class="col-md-3 col-6">
-        <div class="card p-3">
-          <div class="sensor-label">🌡️ Temperature (°C)</div>
+        <div class="card p-3 shadow-sm">
+          <div class="sensor-label">Temperature (°C)</div>
           <div id="temperature" class="sensor-value">Loading...</div>
         </div>
       </div>
       <div class="col-md-3 col-6">
-        <div class="card p-3">
-          <div class="sensor-label">💧 Humidity (%)</div>
+        <div class="card p-3 shadow-sm">
+          <div class="sensor-label">Humidity (%)</div>
           <div id="humidity" class="sensor-value">Loading...</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Chart Section -->
   <div class="container mt-5">
-    <div class="section-header">📊 Sensor Data History</div>
-<ul class="nav nav-tabs ">
+    <div class="section-header">
+      <h3>📊 Sensor Data History</h3>
+    </div>
+
+    <ul class="nav nav-tabs">
       <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#lightTab">Light</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#motionTab">Motion</button></li>
-      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tempTab">Temp & Humidity</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tempTab">Temperature & Humidity</button></li>
     </ul>
 
     <div class="tab-content text-center">
@@ -189,46 +182,21 @@
     </div>
   </div>
 
-<!-- About Section -->
-<div class="container" id="about-section">
-  <div class="section-header">📘 About Us</div>
-
- <!-- Centered Images with Names and Roles -->
-<div class="text-center mb-4 d-flex justify-content-center gap-4 flex-wrap">
-  <div>
-    <img src="image/santos.jpg" alt="Santos" class="rounded-circle mb-2" width="120" height="120">
-    <div><strong>Victor Santos</strong></div>
+  <div class="container" id="about-section">
+    <div class="section-header"><h3>About Us</h3></div>
+    <p class="lead">
+      Welcome to the Hydroponics Monitoring Dashboard. This system is developed to track and analyze real-time sensor data such as light, motion, temperature, and humidity for efficient and smart farming.
+    </p>
+    <p>
+      Our mission is to provide growers with precise environmental monitoring tools to optimize plant growth conditions, reduce resource consumption, and increase yields through data-driven decisions.
+    </p>
+    <p>
+      The system collects data from various sensors and presents it in an intuitive dashboard, allowing you to monitor your hydroponic setup from anywhere at any time.
+    </p>
   </div>
-  <div>
-    <img src="image/tan.jpg" alt="Tan" class="rounded-circle mb-2" width="120" height="120">
-    <div><strong>Lovely Tan</strong></div>
-  </div>
-  <div>
-    <img src="image/isidro.jpg" alt="Isidro" class="rounded-circle mb-2" width="120" height="120">
-    <div><strong>Azhly Isidro</strong></div>
-  </div>
-</div>
-
-
-  <p class="lead">
-    Welcome to our Hydroponics Monitoring Dashboard! This little system is here to help us keep track of our garden's light, motion, temperature, and humidity with a sprinkle of love and data. 
-  </p>
-  <p>
-    Our mission? Helping plants grow healthy and strong while making our dashboard look fabulous! 🪴
-  </p>
-</div>
-
-
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Your existing JS logic for Firebase & Chart rendering here -->
-</body>
-</html>
-
 
   <script>
     const dbUrl = "https://iotfinal-73d37-default-rtdb.asia-southeast1.firebasedatabase.app/sensorData.json";
-    const MAX_DATA_POINTS = 20; // Maximum number of data points to show on graphs
 
     const lightEl = document.getElementById("light");
     const motionEl = document.getElementById("motion");
@@ -240,18 +208,10 @@
     const aboutLink = document.querySelector(".about-link");
 
     let lightChart, motionChart, tempHumChart;
-    let sensorData = []; // Array to store sensor data
 
     function formatTime(timestamp) {
-      try {
-        const date = new Date(timestamp);
-        if (isNaN(date.getTime())) {
-          return timestamp;
-        }
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      } catch (e) {
-        return timestamp;
-      }
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
     function showDashboard() {
@@ -274,7 +234,7 @@
     aboutLink.addEventListener("click", (e) => { e.preventDefault(); showAbout(); });
 
     function processSensorValue(value, type) {
-      if (value === null || value === undefined || value === "nan" || value === "N/A") return null;
+      if (value === null || value === undefined) return null;
       
       switch(type) {
         case 'light': 
@@ -282,9 +242,11 @@
         case 'motion': 
           return String(value).toLowerCase().includes('detected') ? 'DETECTED' : 'NOT DETECTED';
         case 'temperature': 
-          return isNaN(parseFloat(value)) ? null : parseFloat(value).toFixed(1);
+          // Convert from raw value to Celsius if needed
+          return isNaN(parseFloat(value)) ? null : (parseFloat(value) / 10).toFixed(1);
         case 'humidity': 
-          return isNaN(parseFloat(value)) ? null : parseFloat(value).toFixed(1);
+          // Convert from raw value to percentage if needed
+          return isNaN(parseFloat(value)) ? null : (parseFloat(value) / 100).toFixed(1);
         case 'lightIntensity': 
           return isNaN(parseFloat(value)) ? null : parseFloat(value).toFixed(0);
         default: 
@@ -307,16 +269,10 @@
             humidity: value.humidity,
             lightIntensity: value.lightIntensity
           };
-        }).sort((a, b) => {
-          // Sort by timestamp, handling both formats
-          const timeA = new Date(a.timestamp).getTime();
-          const timeB = new Date(b.timestamp).getTime();
-          return timeA - timeB;
-        });
+        }).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
         // Get the latest reading
         const latest = entries[entries.length - 1];
-        if (!latest) return; // No data available
         
         // Update UI with processed values
         const processedLight = processSensorValue(latest.light, 'light');
@@ -336,14 +292,8 @@
         const processedLightIntensity = processSensorValue(latest.lightIntensity, 'lightIntensity');
         lightIntensityEl.textContent = processedLightIntensity || "N/A";
 
-        // Update sensor data array
-        sensorData.push(latest);
-        if (sensorData.length > MAX_DATA_POINTS) {
-          sensorData.shift(); // Remove oldest data point
-        }
-
-        // Render charts with the updated data
-        renderCharts(sensorData);
+        // Render charts with the last 10 entries
+        renderCharts(entries.slice(-10));
       } catch (err) {
         console.error("Error fetching sensor data:", err);
       }
@@ -362,63 +312,81 @@
       if (motionChart) motionChart.destroy();
       if (tempHumChart) tempHumChart.destroy();
 
-      // Light Chart (binary: 1 = ACTIVE, 0 = INACTIVE)
+      // Light Chart
       lightChart = new Chart(document.getElementById("lightChart"), {
-        type: 'line',
+        type: "line",
         data: {
-          labels: labels,
-          datasets: [{
-            label: 'Light Status (1=Active)',
-            data: lightData,
-            backgroundColor: 'rgba(255, 193, 7, 0.2)',
-            borderColor: 'rgba(255, 193, 7, 1)',
-            borderWidth: 2,
-            tension: 0.4,
-            fill: true
-          }]
+          labels,
+          datasets: [
+            { 
+              label: "Light Status (ACTIVE=1, INACTIVE=0)", 
+              data: lightData, 
+              borderColor: "#facc15", 
+              backgroundColor: "rgba(250, 204, 21, 0.1)",
+              borderWidth: 2,
+              tension: 0.1,
+              fill: true
+            },
+            { 
+              label: "Light Intensity", 
+              data: lightIntensityData, 
+              borderColor: "#0ea5e9", 
+              backgroundColor: "rgba(14, 165, 233, 0.1)",
+              borderWidth: 2,
+              tension: 0.1,
+              fill: true,
+              yAxisID: 'y1'
+            }
+          ]
         },
         options: {
-          animation: {
-            duration: 0 // Disable animation for smoother updates
-          },
           scales: {
             y: {
-              ticks: {
-                callback: (val) => val === 1 ? 'ACTIVE' : 'INACTIVE'
-              },
               beginAtZero: true,
-              max: 1
+              max: 1,
+              title: {
+                display: true,
+                text: 'Light Status'
+              }
+            },
+            y1: {
+              beginAtZero: true,
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Light Intensity'
+              },
+              grid: {
+                drawOnChartArea: false
+              }
             }
           }
         }
       });
 
-      // Motion Chart (binary: 1 = DETECTED, 0 = NOT DETECTED)
+      // Motion Chart
       motionChart = new Chart(document.getElementById("motionChart"), {
-        type: 'line',
+        type: "line",
         data: {
-          labels: labels,
-          datasets: [{
-            label: 'Motion (1=Detected)',
-            data: motionData,
-            backgroundColor: 'rgba(76, 175, 80, 0.2)',
-            borderColor: 'rgba(76, 175, 80, 1)',
+          labels,
+          datasets: [{ 
+            label: "Motion (1 = DETECTED)", 
+            data: motionData, 
+            borderColor: "#ef4444", 
+            backgroundColor: "rgba(239, 68, 68, 0.1)",
             borderWidth: 2,
-            tension: 0.4,
+            tension: 0.1,
             fill: true
           }]
         },
         options: {
-          animation: {
-            duration: 0 // Disable animation for smoother updates
-          },
           scales: {
             y: {
-              ticks: {
-                callback: (val) => val === 1 ? 'DETECTED' : 'NONE'
-              },
               beginAtZero: true,
-              max: 1
+              max: 1,
+              ticks: {
+                stepSize: 1
+              }
             }
           }
         }
@@ -426,47 +394,48 @@
 
       // Temperature & Humidity Chart
       tempHumChart = new Chart(document.getElementById("tempHumChart"), {
-        type: 'line',
+        type: "line",
         data: {
-          labels: labels,
+          labels,
           datasets: [
-            {
-              label: 'Temperature (°C)',
-              data: tempData,
-              borderColor: 'rgba(244, 67, 54, 1)',
-              backgroundColor: 'rgba(244, 67, 54, 0.2)',
+            { 
+              label: "Temperature (°C)", 
+              data: tempData, 
+              borderColor: "#10b981", 
+              backgroundColor: "rgba(16, 185, 129, 0.1)",
               borderWidth: 2,
-              tension: 0.4,
+              tension: 0.1,
+              fill: true
+            },
+            { 
+              label: "Humidity (%)", 
+              data: humData, 
+              borderColor: "#8b5cf6", 
+              backgroundColor: "rgba(139, 92, 246, 0.1)",
+              borderWidth: 2,
+              tension: 0.1,
               fill: true,
               yAxisID: 'y1'
-            },
-            {
-              label: 'Humidity (%)',
-              data: humData,
-              borderColor: 'rgba(33, 150, 243, 1)',
-              backgroundColor: 'rgba(33, 150, 243, 0.2)',
-              borderWidth: 2,
-              tension: 0.4,
-              fill: true,
-              yAxisID: 'y2'
             }
           ]
         },
         options: {
-          animation: {
-            duration: 0 // Disable animation for smoother updates
-          },
           scales: {
-            y1: {
-              type: 'linear',
-              position: 'left',
-              beginAtZero: true
+            y: {
+              title: {
+                display: true,
+                text: 'Temperature (°C)'
+              }
             },
-            y2: {
-              type: 'linear',
+            y1: {
               position: 'right',
-              beginAtZero: true,
-              grid: { drawOnChartArea: false }
+              title: {
+                display: true,
+                text: 'Humidity (%)'
+              },
+              grid: {
+                drawOnChartArea: false
+              }
             }
           }
         }
@@ -475,7 +444,7 @@
 
     // Initial fetch and set up periodic updates
     fetchSensorData();
-    setInterval(fetchSensorData, 20000); // Update every 20 seconds to match ESP32 interval
+    setInterval(fetchSensorData, 5000);
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
