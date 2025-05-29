@@ -120,6 +120,11 @@
       height: 300px;
       width: 100%;
     }
+    
+    /* Added for better navigation */
+    .page-section {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -144,7 +149,7 @@
   </nav>
 
   <!-- Dashboard Section -->
-  <div class="container mt-4" id="dashboard">
+  <div class="container mt-4 page-section" id="dashboard">
     <div class="section-header">Latest Sensor Readings</div>
     <div class="row text-center g-4">
       <div class="col-md-2 col-6">
@@ -178,53 +183,53 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- Chart Section -->
-  <div class="container mt-5">
-    <div class="section-header">📊 Sensor Data History</div>
-    <ul class="nav nav-tabs">
-      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#lightTab">Light</button></li>
-      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#motionTab">Motion</button></li>
-      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tempTab">Temp & Humidity</button></li>
-    </ul>
-    <div class="tab-content text-center">
-      <div class="tab-pane fade show active" id="lightTab">
-        <div class="chart-container">
-          <canvas id="lightChart"></canvas>
-        </div>
-      </div>
-      <div class="tab-pane fade" id="motionTab">
-        <div class="chart-container">
-          <canvas id="motionChart"></canvas>
-        </div>
-        <div class="mt-4">
-          <h5 class="mb-3">Motion Detection History</h5>
-          <div class="table-responsive">
-            <table class="table table-striped table-hover">
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Date</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="motionTableBody">
-              </tbody>
-            </table>
+  
+    <!-- Chart Section -->
+    <div class="container mt-5">
+      <div class="section-header">📊 Sensor Data History</div>
+      <ul class="nav nav-tabs">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#lightTab">Light</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#motionTab">Motion</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tempTab">Temp & Humidity</button></li>
+      </ul>
+      <div class="tab-content text-center">
+        <div class="tab-pane fade show active" id="lightTab">
+          <div class="chart-container">
+            <canvas id="lightChart"></canvas>
           </div>
         </div>
-      </div>
-      <div class="tab-pane fade" id="tempTab">
-        <div class="chart-container">
-          <canvas id="tempHumChart"></canvas>
+        <div class="tab-pane fade" id="motionTab">
+          <div class="chart-container">
+            <canvas id="motionChart"></canvas>
+          </div>
+          <div class="mt-4">
+            <h5 class="mb-3">Motion Detection History</h5>
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="motionTableBody">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="tab-pane fade" id="tempTab">
+          <div class="chart-container">
+            <canvas id="tempHumChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- About Section -->
-  <div class="container" id="about-section">
+  <div class="container page-section" id="about-section">
     <div class="section-header">📘 About Us</div>
     <div class="text-center mb-4 d-flex justify-content-center gap-4 flex-wrap">
       <div>
@@ -259,6 +264,9 @@
     const tempEl = document.getElementById("temperature");
     const humEl = document.getElementById("humidity");
     const lightIntensityEl = document.getElementById("lightIntensity");
+
+    // Store the last fetch timestamp to prevent duplicate data
+    let lastFetchTimestamp = 0;
 
     function processSensorValue(value, type) {
       if (value === null || value === undefined) return null;
@@ -313,6 +321,13 @@
           console.error("No entries found in the data");
           return;
         }
+
+        // Check if we have new data since last fetch
+        const latestEntry = entries[entries.length - 1];
+        if (Number(latestEntry.timestamp) <= lastFetchTimestamp) {
+          return; // No new data
+        }
+        lastFetchTimestamp = Number(latestEntry.timestamp);
 
         const latest = entries[entries.length - 1];
 
@@ -509,22 +524,51 @@
       }
     }
 
-    // Toggle between dashboard and about sections
-    document.querySelector('.about-link').addEventListener('click', function(e) {
-      e.preventDefault();
+    // Navigation functions
+    function showDashboard() {
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('about-section').style.display = 'none';
+      document.querySelector('.dashboard-link').classList.add('active');
+      document.querySelector('.about-link').classList.remove('active');
+    }
+
+    function showAbout() {
       document.getElementById('dashboard').style.display = 'none';
       document.getElementById('about-section').style.display = 'block';
       document.querySelector('.dashboard-link').classList.remove('active');
-      this.classList.add('active');
+      document.querySelector('.about-link').classList.add('active');
+    }
+
+    // Set up navigation event listeners
+    document.querySelector('.about-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      showAbout();
+      // Update URL without reloading
+      history.pushState(null, null, '#about');
     });
 
     document.querySelector('.dashboard-link').addEventListener('click', function(e) {
       e.preventDefault();
-      document.getElementById('dashboard').style.display = 'block';
-      document.getElementById('about-section').style.display = 'none';
-      document.querySelector('.about-link').classList.remove('active');
-      this.classList.add('active');
+      showDashboard();
+      // Update URL without reloading
+      history.pushState(null, null, '#dashboard');
     });
+
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', function() {
+      if (window.location.hash === '#about') {
+        showAbout();
+      } else {
+        showDashboard();
+      }
+    });
+
+    // Check initial hash on page load
+    if (window.location.hash === '#about') {
+      showAbout();
+    } else {
+      showDashboard();
+    }
 
     // Fetch data immediately and then every 5 seconds
     fetchSensorData();
