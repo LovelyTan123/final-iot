@@ -27,7 +27,7 @@
 
     .navbar-brand {
       font-weight: bold;
-      color: #fff !important;
+      color: #080101 !important;
       font-size: 1.5rem;
     }
 
@@ -101,6 +101,11 @@
       margin-top: 30px;
       display: none;
     }
+    #about-section img {
+  object-fit: cover;
+  border: 3px solid #c2e9fb;
+}
+
 
     /* Cute status colors */
     .motion-detected { color: #66bb6a; }
@@ -184,16 +189,35 @@
     </div>
   </div>
 
-  <!-- About Section -->
-  <div class="container" id="about-section">
-    <div class="section-header">📘 About Us</div>
-    <p class="lead">
-      Welcome to our Hydroponics Monitoring Dashboard! This little system is here to help you keep track of your garden's light, motion, temperature, and humidity with a sprinkle of love and data. 
-    </p>
-    <p>
-      Our mission? Helping plants grow healthy and strong while making your dashboard look fabulous! 🪴
-    </p>
+<!-- About Section -->
+<div class="container" id="about-section">
+  <div class="section-header">📘 About Us</div>
+
+ <!-- Centered Images with Names and Roles -->
+<div class="text-center mb-4 d-flex justify-content-center gap-4 flex-wrap">
+  <div>
+    <img src="image/santos.jpg" alt="Santos" class="rounded-circle mb-2" width="120" height="120">
+    <div><strong>Victor Santos</strong></div>
   </div>
+  <div>
+    <img src="image/tan.jpg" alt="Tan" class="rounded-circle mb-2" width="120" height="120">
+    <div><strong>Lovely Tan</strong></div>
+  </div>
+  <div>
+    <img src="image/isidro.jpg" alt="Isidro" class="rounded-circle mb-2" width="120" height="120">
+    <div><strong>Azhly Isidro</strong></div>
+  </div>
+</div>
+
+
+  <p class="lead">
+    Welcome to our Hydroponics Monitoring Dashboard! This little system is here to help us keep track of our garden's light, motion, temperature, and humidity with a sprinkle of love and data. 
+  </p>
+  <p>
+    Our mission? Helping plants grow healthy and strong while making our dashboard look fabulous! 🪴
+  </p>
+</div>
+
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -203,7 +227,7 @@
 
 
   <script>
-    const dbUrl = "https://iotfinal-73d37-default-rtdb.asia-southeast1.firebasedatabase.app/sensorData";
+    const dbUrl = "https://iotfinal-73d37-default-rtdb.asia-southeast1.firebasedatabase.app/sensorData.json";
 
     const lightEl = document.getElementById("light");
     const motionEl = document.getElementById("motion");
