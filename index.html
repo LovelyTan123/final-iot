@@ -265,16 +265,15 @@
     const humEl = document.getElementById("humidity");
     const lightIntensityEl = document.getElementById("lightIntensity");
 
-    // Store the last fetch timestamp to prevent duplicate data
-    let lastFetchTimestamp = 0;
-
     function processSensorValue(value, type) {
       if (value === null || value === undefined) return null;
       switch (type) {
         case 'light':
           return String(value).toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
         case 'motion':
-          return String(value).toUpperCase().includes('DETECTED') ? 'DETECTED' : 'NOT DETECTED';
+          const motionStr = String(value).toUpperCase();
+          return (motionStr.includes('DETECTED') || motionStr === 'YES' || motionStr === 'TRUE' || motionStr === '1') 
+            ? 'DETECTED' : 'NOT DETECTED';
         case 'temperature':
         case 'humidity':
           return isNaN(value) ? null : parseFloat(value).toFixed(1);
@@ -285,20 +284,51 @@
       }
     }
 
-    function formatTime(ts) {
-      const timestamp = isNaN(ts) ? new Date(ts) : new Date(Number(ts));
-      return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    function parseFirebaseTimestamp(timestampStr) {
+      try {
+        // Handle both numeric timestamps and formatted strings
+        if (!isNaN(timestampStr)) {
+          return new Date(Number(timestampStr));
+        }
+        
+        // Parse the format "YYYY-MM-DD_HH-MM-SS"
+        const parts = timestampStr.split('_');
+        if (parts.length !== 2) return new Date();
+        
+        const dateParts = parts[0].split('-');
+        const timeParts = parts[1].split('-');
+        
+        if (dateParts.length !== 3 || timeParts.length !== 3) return new Date();
+        
+        return new Date(
+          parseInt(dateParts[0]),
+          parseInt(dateParts[1]) - 1,
+          parseInt(dateParts[2]),
+          parseInt(timeParts[0]),
+          parseInt(timeParts[1]),
+          parseInt(timeParts[2])
+        );
+      } catch (e) {
+        console.error("Error parsing timestamp:", timestampStr, e);
+        return new Date();
+      }
     }
 
-    function formatDate(ts) {
-      const timestamp = isNaN(ts) ? new Date(ts) : new Date(Number(ts));
-      return timestamp.toLocaleDateString();
+    function formatTime(date) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatDate(date) {
+      return date.toLocaleDateString();
     }
 
     async function fetchSensorData() {
       try {
-        // Fetch data from Firebase with timestamp to prevent caching
+        // Fetch data from Firebase
         const res = await fetch(`${dbUrl}?time=${Date.now()}`);
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
         const data = await res.json();
 
         if (!data) {
@@ -307,36 +337,37 @@
         }
 
         // Process and sort the data
-        const entries = Object.entries(data).map(([key, val]) => ({
-          key,
-          timestamp: val.timestamp || key,
-          light: val.light,
-          motion: val.motion,
-          temperature: parseFloat(val.temperature),
-          humidity: parseFloat(val.humidity),
-          lightIntensity: parseInt(val.lightIntensity)
-        })).sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+        const entries = Object.entries(data).map(([key, val]) => {
+          const timestamp = val?.timestamp || key;
+          const dateObj = parseFirebaseTimestamp(timestamp);
+          
+          return {
+            key,
+            timestamp: timestamp,
+            dateObj: dateObj,
+            light: val?.light || 'INACTIVE',
+            motion: val?.motion || 'NOT DETECTED',
+            temperature: val?.temperature ? parseFloat(val.temperature) : null,
+            humidity: val?.humidity ? parseFloat(val.humidity) : null,
+            lightIntensity: val?.lightIntensity ? parseInt(val.lightIntensity) : null
+          };
+        }).filter(entry => entry.dateObj instanceof Date && !isNaN(entry.dateObj.getTime()))
+          .sort((a, b) => a.dateObj - b.dateObj);
 
         if (entries.length === 0) {
-          console.error("No entries found in the data");
+          console.error("No valid entries found in the data");
           return;
         }
 
-        // Check if we have new data since last fetch
+        // Get the most recent entry
         const latestEntry = entries[entries.length - 1];
-        if (Number(latestEntry.timestamp) <= lastFetchTimestamp) {
-          return; // No new data
-        }
-        lastFetchTimestamp = Number(latestEntry.timestamp);
-
-        const latest = entries[entries.length - 1];
 
         // Display current sensor readings
-        const lightStatus = processSensorValue(latest.light, 'light');
-        const motionStatus = processSensorValue(latest.motion, 'motion');
-        const tempVal = processSensorValue(latest.temperature, 'temperature');
-        const humVal = processSensorValue(latest.humidity, 'humidity');
-        const lightIntensityVal = processSensorValue(latest.lightIntensity, 'lightIntensity');
+        const lightStatus = processSensorValue(latestEntry.light, 'light');
+        const motionStatus = processSensorValue(latestEntry.motion, 'motion');
+        const tempVal = processSensorValue(latestEntry.temperature, 'temperature');
+        const humVal = processSensorValue(latestEntry.humidity, 'humidity');
+        const lightIntensityVal = processSensorValue(latestEntry.lightIntensity, 'lightIntensity');
 
         // Update the display elements
         lightEl.textContent = lightStatus;
@@ -351,22 +382,24 @@
 
         // Update motion table with all historical data
         const motionTableBody = document.getElementById('motionTableBody');
-        motionTableBody.innerHTML = entries.map(entry => `
-          <tr>
-            <td>${formatTime(entry.timestamp)}</td>
-            <td>${formatDate(entry.timestamp)}</td>
-            <td class="${entry.motion.toUpperCase().includes('DETECTED') ? 'text-success' : 'text-danger'}">
-              ${entry.motion.toUpperCase().includes('DETECTED') ? 'Motion Detected' : 'No Motion'}
-            </td>
-          </tr>
-        `).join('');
+        motionTableBody.innerHTML = entries.map(entry => {
+          const motionStatus = processSensorValue(entry.motion, 'motion');
+          return `
+            <tr>
+              <td>${formatTime(entry.dateObj)}</td>
+              <td>${formatDate(entry.dateObj)}</td>
+              <td class="${motionStatus === 'DETECTED' ? 'text-success' : 'text-danger'}">
+                ${motionStatus === 'DETECTED' ? 'Motion Detected' : 'No Motion'}
+              </td>
+            </tr>
+          `;
+        }).join('');
 
         // Update all charts with the complete dataset
         updateCharts(entries);
 
       } catch (err) {
         console.error("Error fetching sensor data:", err);
-        // Display error state in the UI
         lightEl.textContent = 'Error';
         motionEl.textContent = 'Error';
         tempEl.textContent = 'Error';
@@ -378,11 +411,14 @@
     let lightChart, motionChart, tempHumChart;
 
     function updateCharts(data) {
-      const labels = data.map(d => formatTime(d.timestamp));
+      const labels = data.map(d => formatTime(d.dateObj));
+      
+      // Prepare data for charts
       const lightIntensityData = data.map(d => d.lightIntensity);
-      const motionData = data.map(d => d.motion.toUpperCase().includes("DETECTED") ? 1 : 0);
+      const motionData = data.map(d => processSensorValue(d.motion, 'motion') === 'DETECTED' ? 1 : 0);
       const tempData = data.map(d => d.temperature);
       const humData = data.map(d => d.humidity);
+      const lightStatusData = data.map(d => processSensorValue(d.light, 'light') === 'ACTIVE' ? 1 : 0);
 
       // Light Chart
       if (!lightChart) {
@@ -391,21 +427,65 @@
           type: 'line',
           data: {
             labels,
-            datasets: [{
-              label: 'Light Intensity',
-              data: lightIntensityData,
-              borderColor: '#ffd54f',
-              backgroundColor: 'rgba(255,213,79,0.2)',
-              fill: true,
-              tension: 0.4
-            }]
+            datasets: [
+              {
+                label: 'Light Intensity',
+                data: lightIntensityData,
+                borderColor: '#ffd54f',
+                backgroundColor: 'rgba(255,213,79,0.2)',
+                fill: true,
+                tension: 0.4,
+                yAxisID: 'y'
+              },
+              {
+                label: 'Light Status (Active=1)',
+                data: lightStatusData,
+                borderColor: '#4caf50',
+                backgroundColor: 'rgba(76,175,80,0.2)',
+                fill: false,
+                tension: 0.1,
+                yAxisID: 'y1',
+                type: 'line'
+              }
+            ]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false,
+            },
             scales: {
               y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                  display: true,
+                  text: 'Light Intensity'
+                },
                 beginAtZero: true
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                  display: true,
+                  text: 'Light Status'
+                },
+                min: 0,
+                max: 1,
+                grid: {
+                  drawOnChartArea: false,
+                },
+                ticks: {
+                  stepSize: 1,
+                  callback: function(value) {
+                    return value === 1 ? 'On' : 'Off';
+                  }
+                }
               }
             }
           }
@@ -413,6 +493,7 @@
       } else {
         lightChart.data.labels = labels;
         lightChart.data.datasets[0].data = lightIntensityData;
+        lightChart.data.datasets[1].data = lightStatusData;
         lightChart.update();
       }
 
@@ -426,7 +507,9 @@
             datasets: [{
               label: 'Motion Detected',
               data: motionData,
-              backgroundColor: motionData.map(val => val ? '#66bb6a' : '#ef5350')
+              backgroundColor: motionData.map(val => val ? '#66bb6a' : '#ef5350'),
+              borderColor: motionData.map(val => val ? '#4caf50' : '#f44336'),
+              borderWidth: 1
             }]
           },
           options: {
@@ -442,6 +525,12 @@
                     return value === 1 ? 'Yes' : 'No';
                   }
                 }
+              },
+              x: {
+                ticks: {
+                  autoSkip: true,
+                  maxTicksLimit: 20
+                }
               }
             }
           }
@@ -450,6 +539,7 @@
         motionChart.data.labels = labels;
         motionChart.data.datasets[0].data = motionData;
         motionChart.data.datasets[0].backgroundColor = motionData.map(val => val ? '#66bb6a' : '#ef5350');
+        motionChart.data.datasets[0].borderColor = motionData.map(val => val ? '#4caf50' : '#f44336');
         motionChart.update();
       }
 
@@ -496,7 +586,9 @@
                 title: {
                   display: true,
                   text: 'Temperature (°C)'
-                }
+                },
+                suggestedMin: Math.min(...tempData.filter(val => val !== null)) - 5,
+                suggestedMax: Math.max(...tempData.filter(val => val !== null)) + 5
               },
               y1: {
                 type: 'linear',
@@ -506,12 +598,17 @@
                   display: true,
                   text: 'Humidity (%)'
                 },
-                // grid line settings
                 grid: {
-                  drawOnChartArea: false, // only want the grid lines for one axis to show up
+                  drawOnChartArea: false,
                 },
                 min: 0,
                 max: 100
+              },
+              x: {
+                ticks: {
+                  autoSkip: true,
+                  maxTicksLimit: 20
+                }
               }
             }
           }
@@ -520,6 +617,14 @@
         tempHumChart.data.labels = labels;
         tempHumChart.data.datasets[0].data = tempData;
         tempHumChart.data.datasets[1].data = humData;
+        
+        // Update scale ranges based on current data
+        const validTempData = tempData.filter(val => val !== null);
+        if (validTempData.length > 0) {
+          tempHumChart.options.scales.y.suggestedMin = Math.min(...validTempData) - 5;
+          tempHumChart.options.scales.y.suggestedMax = Math.max(...validTempData) + 5;
+        }
+        
         tempHumChart.update();
       }
     }
@@ -543,14 +648,12 @@
     document.querySelector('.about-link').addEventListener('click', function(e) {
       e.preventDefault();
       showAbout();
-      // Update URL without reloading
       history.pushState(null, null, '#about');
     });
 
     document.querySelector('.dashboard-link').addEventListener('click', function(e) {
       e.preventDefault();
       showDashboard();
-      // Update URL without reloading
       history.pushState(null, null, '#dashboard');
     });
 
