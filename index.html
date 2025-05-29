@@ -181,7 +181,25 @@
     </ul>
     <div class="tab-content text-center">
       <div class="tab-pane fade show active" id="lightTab"><canvas id="lightChart"></canvas></div>
-      <div class="tab-pane fade" id="motionTab"><canvas id="motionChart"></canvas></div>
+      <div class="tab-pane fade" id="motionTab">
+        <canvas id="motionChart"></canvas>
+        <div class="mt-4">
+          <h5 class="mb-3">Motion Detection History</h5>
+          <div class="table-responsive">
+            <table class="table table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="motionTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
       <div class="tab-pane fade" id="tempTab"><canvas id="tempHumChart"></canvas></div>
     </div>
   </div>
@@ -211,176 +229,217 @@
     </p>
   </div>
 
-  <!-- Scripts -->
+ <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="sensor-script.js"></script>
-
-
-
   <script>
+    // Update the database URL to your actual Firebase Realtime Database URL
     const dbUrl = "https://iotfinal-73d37-default-rtdb.asia-southeast1.firebasedatabase.app/sensorData.json";
 
-const lightEl = document.getElementById("light");
-const motionEl = document.getElementById("motion");
-const tempEl = document.getElementById("temperature");
-const humEl = document.getElementById("humidity");
-const lightIntensityEl = document.getElementById("lightIntensity");
+    const lightEl = document.getElementById("light");
+    const motionEl = document.getElementById("motion");
+    const tempEl = document.getElementById("temperature");
+    const humEl = document.getElementById("humidity");
+    const lightIntensityEl = document.getElementById("lightIntensity");
 
-function processSensorValue(value, type) {
-  if (value === null || value === undefined) return null;
-
-  switch (type) {
-    case 'light':
-      return String(value).toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
-    case 'motion':
-      return String(value).toUpperCase().includes('DETECTED') ? 'DETECTED' : 'NOT DETECTED';
-    case 'temperature':
-      return isNaN(value) ? null : parseFloat(value).toFixed(1);
-    case 'humidity':
-      return isNaN(value) ? null : parseFloat(value).toFixed(1);
-    case 'lightIntensity':
-      return isNaN(value) ? null : parseInt(value);
-    default:
-      return value;
-  }
-}
-
-function formatTime(ts) {
-  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-async function fetchSensorData() {
-  try {
-    const res = await fetch(`${dbUrl}?time=${Date.now()}`);
-    const data = await res.json();
-
-    const entries = Object.entries(data || {}).map(([key, val]) => ({
-      key,
-      timestamp: val.timestamp || key,
-      light: val.light,
-      motion: val.motion,
-      temperature: parseFloat(val.temperature),
-      humidity: parseFloat(val.humidity),
-      lightIntensity: parseInt(val.lightIntensity)
-    })).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-    const latest = entries[entries.length - 1];
-
-    // Display current sensor readings
-    const lightStatus = processSensorValue(latest.light, 'light');
-    const motionStatus = processSensorValue(latest.motion, 'motion');
-    const tempVal = processSensorValue(latest.temperature, 'temperature');
-    const humVal = processSensorValue(latest.humidity, 'humidity');
-    const lightIntensityVal = processSensorValue(latest.lightIntensity, 'lightIntensity');
-
-    lightEl.textContent = lightStatus;
-    lightEl.className = `sensor-value ${lightStatus === 'ACTIVE' ? 'light-active' : 'light-inactive'}`;
-
-    motionEl.textContent = motionStatus;
-    motionEl.className = `sensor-value ${motionStatus === 'DETECTED' ? 'motion-detected' : 'motion-not-detected'}`;
-
-    tempEl.textContent = tempVal !== null ? `${tempVal} °C` : 'N/A';
-    humEl.textContent = humVal !== null ? `${humVal} %` : 'N/A';
-    lightIntensityEl.textContent = lightIntensityVal !== null ? `${lightIntensityVal}` : 'N/A';
-
-    updateCharts(entries.slice(-10)); // Last 10 readings
-  } catch (err) {
-    console.error("Fetch error:", err);
-  }
-}
-
-// Initialize Chart.js charts
-let lightChart, motionChart, tempHumChart;
-
-function updateCharts(data) {
-  const labels = data.map(d => formatTime(d.timestamp));
-  const lightIntensityData = data.map(d => d.lightIntensity);
-  const motionData = data.map(d => d.motion === 'DETECTED' ? 1 : 0);
-  const tempData = data.map(d => d.temperature);
-  const humData = data.map(d => d.humidity);
-
-  // Light Chart
-  if (!lightChart) {
-    const ctx = document.getElementById('lightChart').getContext('2d');
-    lightChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: 'Light Intensity',
-          data: lightIntensityData,
-          borderColor: '#ffd54f',
-          backgroundColor: 'rgba(255,213,79,0.2)',
-          fill: true
-        }]
+    function processSensorValue(value, type) {
+      if (value === null || value === undefined) return null;
+      switch (type) {
+        case 'light':
+          return String(value).toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
+        case 'motion':
+          return String(value).toUpperCase().includes('DETECTED') ? 'DETECTED' : 'NOT DETECTED';
+        case 'temperature':
+        case 'humidity':
+          return isNaN(value) ? null : parseFloat(value).toFixed(1);
+        case 'lightIntensity':
+          return isNaN(value) ? null : parseInt(value);
+        default:
+          return value;
       }
-    });
-  } else {
-    lightChart.data.labels = labels;
-    lightChart.data.datasets[0].data = lightIntensityData;
-    lightChart.update();
-  }
+    }
 
-  // Motion Chart
-  if (!motionChart) {
-    const ctx = document.getElementById('motionChart').getContext('2d');
-    motionChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [{
-          label: 'Motion Detected',
-          data: motionData,
-          backgroundColor: '#66bb6a'
-        }]
+    function formatTime(ts) {
+      const timestamp = isNaN(ts) ? new Date(ts) : new Date(Number(ts));
+      return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatDate(ts) {
+      const timestamp = isNaN(ts) ? new Date(ts) : new Date(Number(ts));
+      return timestamp.toLocaleDateString();
+    }
+
+    async function fetchSensorData() {
+      try {
+        // Fetch data from Firebase with timestamp to prevent caching
+        const res = await fetch(`${dbUrl}?time=${Date.now()}`);
+        const data = await res.json();
+
+        if (!data) {
+          console.error("No data received from database");
+          return;
+        }
+
+        // Process and sort the data
+        const entries = Object.entries(data).map(([key, val]) => ({
+          key,
+          timestamp: val.timestamp || key,
+          light: val.light,
+          motion: val.motion,
+          temperature: parseFloat(val.temperature),
+          humidity: parseFloat(val.humidity),
+          lightIntensity: parseInt(val.lightIntensity)
+        })).sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+
+        if (entries.length === 0) {
+          console.error("No entries found in the data");
+          return;
+        }
+
+        const latest = entries[entries.length - 1];
+
+        // Display current sensor readings
+        const lightStatus = processSensorValue(latest.light, 'light');
+        const motionStatus = processSensorValue(latest.motion, 'motion');
+        const tempVal = processSensorValue(latest.temperature, 'temperature');
+        const humVal = processSensorValue(latest.humidity, 'humidity');
+        const lightIntensityVal = processSensorValue(latest.lightIntensity, 'lightIntensity');
+
+        // Update the display elements
+        lightEl.textContent = lightStatus;
+        lightEl.className = `sensor-value ${lightStatus === 'ACTIVE' ? 'light-active' : 'light-inactive'}`;
+
+        motionEl.textContent = motionStatus;
+        motionEl.className = `sensor-value ${motionStatus === 'DETECTED' ? 'motion-detected' : 'motion-not-detected'}`;
+
+        tempEl.textContent = tempVal !== null ? `${tempVal} °C` : 'N/A';
+        humEl.textContent = humVal !== null ? `${humVal} %` : 'N/A';
+        lightIntensityEl.textContent = lightIntensityVal !== null ? `${lightIntensityVal}` : 'N/A';
+
+        // Update motion table with all historical data
+        const motionTableBody = document.getElementById('motionTableBody');
+        motionTableBody.innerHTML = entries.map(entry => `
+          <tr>
+            <td>${formatTime(entry.timestamp)}</td>
+            <td>${formatDate(entry.timestamp)}</td>
+            <td class="${entry.motion.toUpperCase().includes('DETECTED') ? 'text-success' : 'text-danger'}">
+              ${entry.motion.toUpperCase().includes('DETECTED') ? 'Motion Detected' : 'No Motion'}
+            </td>
+          </tr>
+        `).join('');
+
+        // Update all charts with the complete dataset
+        updateCharts(entries);
+
+      } catch (err) {
+        console.error("Error fetching sensor data:", err);
+        // Display error state in the UI
+        lightEl.textContent = 'Error';
+        motionEl.textContent = 'Error';
+        tempEl.textContent = 'Error';
+        humEl.textContent = 'Error';
+        lightIntensityEl.textContent = 'Error';
       }
-    });
-  } else {
-    motionChart.data.labels = labels;
-    motionChart.data.datasets[0].data = motionData;
-    motionChart.update();
-  }
+    }
 
-  // Temp & Humidity Chart
-  if (!tempHumChart) {
-    const ctx = document.getElementById('tempHumChart').getContext('2d');
-    tempHumChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Temperature (°C)',
-            data: tempData,
-            borderColor: '#ef5350',
-            backgroundColor: 'rgba(239,83,80,0.1)',
-            fill: true
+    let lightChart, motionChart, tempHumChart;
+
+    function updateCharts(data) {
+      const labels = data.map(d => formatTime(d.timestamp));
+      const lightIntensityData = data.map(d => d.lightIntensity);
+      const motionData = data.map(d => d.motion.toUpperCase().includes("DETECTED") ? 1 : 0);
+      const tempData = data.map(d => d.temperature);
+      const humData = data.map(d => d.humidity);
+
+      // Light Chart
+      if (!lightChart) {
+        const ctx = document.getElementById('lightChart').getContext('2d');
+        lightChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Light Intensity',
+              data: lightIntensityData,
+              borderColor: '#ffd54f',
+              backgroundColor: 'rgba(255,213,79,0.2)',
+              fill: true
+            }]
           },
-          {
-            label: 'Humidity (%)',
-            data: humData,
-            borderColor: '#42a5f5',
-            backgroundColor: 'rgba(66,165,245,0.1)',
-            fill: true
+          options: {
+            responsive: true,
+            maintainAspectRatio: false
           }
-        ]
+        });
+      } else {
+        lightChart.data.labels = labels;
+        lightChart.data.datasets[0].data = lightIntensityData;
+        lightChart.update();
       }
-    });
-  } else {
-    tempHumChart.data.labels = labels;
-    tempHumChart.data.datasets[0].data = tempData;
-    tempHumChart.data.datasets[1].data = humData;
-    tempHumChart.update();
-  }
-}
 
+      // Motion Chart
+      if (!motionChart) {
+        const ctx = document.getElementById('motionChart').getContext('2d');
+        motionChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Motion Detected',
+              data: motionData,
+              backgroundColor: '#66bb6a'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false
+          }
+        });
+      } else {
+        motionChart.data.labels = labels;
+        motionChart.data.datasets[0].data = motionData;
+        motionChart.update();
+      }
 
+      // Temp & Humidity Chart
+      if (!tempHumChart) {
+        const ctx = document.getElementById('tempHumChart').getContext('2d');
+        tempHumChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: 'Temperature (°C)',
+                data: tempData,
+                borderColor: '#ff8a65',
+                backgroundColor: 'rgba(255,138,101,0.2)',
+                fill: true
+              },
+              {
+                label: 'Humidity (%)',
+                data: humData,
+                borderColor: '#4fc3f7',
+                backgroundColor: 'rgba(79,195,247,0.2)',
+                fill: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false
+          }
+        });
+      } else {
+        tempHumChart.data.labels = labels;
+        tempHumChart.data.datasets[0].data = tempData;
+        tempHumChart.data.datasets[1].data = humData;
+        tempHumChart.update();
+      }
+    }
 
-    // Initial fetch and set up periodic updates
+    // Fetch data immediately and then every 5 seconds
     fetchSensorData();
     setInterval(fetchSensorData, 5000);
   </script>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
