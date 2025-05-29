@@ -27,7 +27,7 @@
 
     .navbar-brand {
       font-weight: bold;
-      color: #fff !important;
+      color: #080101 !important;
       font-size: 1.5rem;
     }
 
@@ -101,6 +101,11 @@
       margin-top: 30px;
       display: none;
     }
+    #about-section img {
+  object-fit: cover;
+  border: 3px solid #c2e9fb;
+}
+
 
     /* Cute status colors */
     .motion-detected { color: #66bb6a; }
@@ -133,7 +138,7 @@
 
   <!-- Live Sensor Section -->
   <div class="container mt-4" id="dashboard">
-    <div class="section-header">📡 Live Sensor Readings</div>
+    <div class="section-header">Latest Sensor Readings</div>
     <div class="row text-center g-4">
       <div class="col-md-2 col-6">
         <div class="card p-3">
@@ -171,7 +176,7 @@
   <!-- Chart Section -->
   <div class="container mt-5">
     <div class="section-header">📊 Sensor Data History</div>
-    <ul class="nav nav-tabs">
+<ul class="nav nav-tabs ">
       <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#lightTab">Light</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#motionTab">Motion</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tempTab">Temp & Humidity</button></li>
@@ -184,16 +189,35 @@
     </div>
   </div>
 
-  <!-- About Section -->
-  <div class="container" id="about-section">
-    <div class="section-header">📘 About Us</div>
-    <p class="lead">
-      Welcome to the cute and clever Hydroponics Monitoring Dashboard! 💖 This little system is here to help you keep track of your garden's light, motion, temperature, and humidity with a sprinkle of love and data. 🌈
-    </p>
-    <p>
-      Our mission? Helping plants grow healthy and strong while making your dashboard look fabulous! 🪴✨
-    </p>
+<!-- About Section -->
+<div class="container" id="about-section">
+  <div class="section-header">📘 About Us</div>
+
+ <!-- Centered Images with Names and Roles -->
+<div class="text-center mb-4 d-flex justify-content-center gap-4 flex-wrap">
+  <div>
+    <img src="image/santos.jpg" alt="Santos" class="rounded-circle mb-2" width="120" height="120">
+    <div><strong>Victor Santos</strong></div>
   </div>
+  <div>
+    <img src="image/tan.jpg" alt="Tan" class="rounded-circle mb-2" width="120" height="120">
+    <div><strong>Lovely Tan</strong></div>
+  </div>
+  <div>
+    <img src="image/isidro.jpg" alt="Isidro" class="rounded-circle mb-2" width="120" height="120">
+    <div><strong>Azhly Isidro</strong></div>
+  </div>
+</div>
+
+
+  <p class="lead">
+    Welcome to our Hydroponics Monitoring Dashboard! This little system is here to help us keep track of our garden's light, motion, temperature, and humidity with a sprinkle of love and data. 
+  </p>
+  <p>
+    Our mission? Helping plants grow healthy and strong while making our dashboard look fabulous! 🪴
+  </p>
+</div>
+
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -201,8 +225,10 @@
 </body>
 </html>
 
+
   <script>
     const dbUrl = "https://iotfinal-73d37-default-rtdb.asia-southeast1.firebasedatabase.app/sensorData.json";
+    const MAX_DATA_POINTS = 20; // Maximum number of data points to show on graphs
 
     const lightEl = document.getElementById("light");
     const motionEl = document.getElementById("motion");
@@ -214,10 +240,18 @@
     const aboutLink = document.querySelector(".about-link");
 
     let lightChart, motionChart, tempHumChart;
+    let sensorData = []; // Array to store sensor data
 
     function formatTime(timestamp) {
-      const date = new Date(timestamp);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      try {
+        const date = new Date(timestamp);
+        if (isNaN(date.getTime())) {
+          return timestamp;
+        }
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } catch (e) {
+        return timestamp;
+      }
     }
 
     function showDashboard() {
@@ -240,7 +274,7 @@
     aboutLink.addEventListener("click", (e) => { e.preventDefault(); showAbout(); });
 
     function processSensorValue(value, type) {
-      if (value === null || value === undefined) return null;
+      if (value === null || value === undefined || value === "nan" || value === "N/A") return null;
       
       switch(type) {
         case 'light': 
@@ -248,11 +282,9 @@
         case 'motion': 
           return String(value).toLowerCase().includes('detected') ? 'DETECTED' : 'NOT DETECTED';
         case 'temperature': 
-          // Convert from raw value to Celsius if needed
-          return isNaN(parseFloat(value)) ? null : (parseFloat(value) / 10).toFixed(1);
+          return isNaN(parseFloat(value)) ? null : parseFloat(value).toFixed(1);
         case 'humidity': 
-          // Convert from raw value to percentage if needed
-          return isNaN(parseFloat(value)) ? null : (parseFloat(value) / 100).toFixed(1);
+          return isNaN(parseFloat(value)) ? null : parseFloat(value).toFixed(1);
         case 'lightIntensity': 
           return isNaN(parseFloat(value)) ? null : parseFloat(value).toFixed(0);
         default: 
@@ -275,10 +307,16 @@
             humidity: value.humidity,
             lightIntensity: value.lightIntensity
           };
-        }).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        }).sort((a, b) => {
+          // Sort by timestamp, handling both formats
+          const timeA = new Date(a.timestamp).getTime();
+          const timeB = new Date(b.timestamp).getTime();
+          return timeA - timeB;
+        });
 
         // Get the latest reading
         const latest = entries[entries.length - 1];
+        if (!latest) return; // No data available
         
         // Update UI with processed values
         const processedLight = processSensorValue(latest.light, 'light');
@@ -298,8 +336,14 @@
         const processedLightIntensity = processSensorValue(latest.lightIntensity, 'lightIntensity');
         lightIntensityEl.textContent = processedLightIntensity || "N/A";
 
-        // Render charts with the last 10 entries
-        renderCharts(entries.slice(-10));
+        // Update sensor data array
+        sensorData.push(latest);
+        if (sensorData.length > MAX_DATA_POINTS) {
+          sensorData.shift(); // Remove oldest data point
+        }
+
+        // Render charts with the updated data
+        renderCharts(sensorData);
       } catch (err) {
         console.error("Error fetching sensor data:", err);
       }
@@ -318,81 +362,63 @@
       if (motionChart) motionChart.destroy();
       if (tempHumChart) tempHumChart.destroy();
 
-      // Light Chart
+      // Light Chart (binary: 1 = ACTIVE, 0 = INACTIVE)
       lightChart = new Chart(document.getElementById("lightChart"), {
-        type: "line",
+        type: 'line',
         data: {
-          labels,
-          datasets: [
-            { 
-              label: "Light Status (ACTIVE=1, INACTIVE=0)", 
-              data: lightData, 
-              borderColor: "#facc15", 
-              backgroundColor: "rgba(250, 204, 21, 0.1)",
-              borderWidth: 2,
-              tension: 0.1,
-              fill: true
-            },
-            { 
-              label: "Light Intensity", 
-              data: lightIntensityData, 
-              borderColor: "#0ea5e9", 
-              backgroundColor: "rgba(14, 165, 233, 0.1)",
-              borderWidth: 2,
-              tension: 0.1,
-              fill: true,
-              yAxisID: 'y1'
-            }
-          ]
+          labels: labels,
+          datasets: [{
+            label: 'Light Status (1=Active)',
+            data: lightData,
+            backgroundColor: 'rgba(255, 193, 7, 0.2)',
+            borderColor: 'rgba(255, 193, 7, 1)',
+            borderWidth: 2,
+            tension: 0.4,
+            fill: true
+          }]
         },
         options: {
+          animation: {
+            duration: 0 // Disable animation for smoother updates
+          },
           scales: {
             y: {
-              beginAtZero: true,
-              max: 1,
-              title: {
-                display: true,
-                text: 'Light Status'
-              }
-            },
-            y1: {
-              beginAtZero: true,
-              position: 'right',
-              title: {
-                display: true,
-                text: 'Light Intensity'
+              ticks: {
+                callback: (val) => val === 1 ? 'ACTIVE' : 'INACTIVE'
               },
-              grid: {
-                drawOnChartArea: false
-              }
+              beginAtZero: true,
+              max: 1
             }
           }
         }
       });
 
-      // Motion Chart
+      // Motion Chart (binary: 1 = DETECTED, 0 = NOT DETECTED)
       motionChart = new Chart(document.getElementById("motionChart"), {
-        type: "line",
+        type: 'line',
         data: {
-          labels,
-          datasets: [{ 
-            label: "Motion (1 = DETECTED)", 
-            data: motionData, 
-            borderColor: "#ef4444", 
-            backgroundColor: "rgba(239, 68, 68, 0.1)",
+          labels: labels,
+          datasets: [{
+            label: 'Motion (1=Detected)',
+            data: motionData,
+            backgroundColor: 'rgba(76, 175, 80, 0.2)',
+            borderColor: 'rgba(76, 175, 80, 1)',
             borderWidth: 2,
-            tension: 0.1,
+            tension: 0.4,
             fill: true
           }]
         },
         options: {
+          animation: {
+            duration: 0 // Disable animation for smoother updates
+          },
           scales: {
             y: {
-              beginAtZero: true,
-              max: 1,
               ticks: {
-                stepSize: 1
-              }
+                callback: (val) => val === 1 ? 'DETECTED' : 'NONE'
+              },
+              beginAtZero: true,
+              max: 1
             }
           }
         }
@@ -400,48 +426,47 @@
 
       // Temperature & Humidity Chart
       tempHumChart = new Chart(document.getElementById("tempHumChart"), {
-        type: "line",
+        type: 'line',
         data: {
-          labels,
+          labels: labels,
           datasets: [
-            { 
-              label: "Temperature (°C)", 
-              data: tempData, 
-              borderColor: "#10b981", 
-              backgroundColor: "rgba(16, 185, 129, 0.1)",
+            {
+              label: 'Temperature (°C)',
+              data: tempData,
+              borderColor: 'rgba(244, 67, 54, 1)',
+              backgroundColor: 'rgba(244, 67, 54, 0.2)',
               borderWidth: 2,
-              tension: 0.1,
-              fill: true
-            },
-            { 
-              label: "Humidity (%)", 
-              data: humData, 
-              borderColor: "#8b5cf6", 
-              backgroundColor: "rgba(139, 92, 246, 0.1)",
-              borderWidth: 2,
-              tension: 0.1,
+              tension: 0.4,
               fill: true,
               yAxisID: 'y1'
+            },
+            {
+              label: 'Humidity (%)',
+              data: humData,
+              borderColor: 'rgba(33, 150, 243, 1)',
+              backgroundColor: 'rgba(33, 150, 243, 0.2)',
+              borderWidth: 2,
+              tension: 0.4,
+              fill: true,
+              yAxisID: 'y2'
             }
           ]
         },
         options: {
+          animation: {
+            duration: 0 // Disable animation for smoother updates
+          },
           scales: {
-            y: {
-              title: {
-                display: true,
-                text: 'Temperature (°C)'
-              }
-            },
             y1: {
+              type: 'linear',
+              position: 'left',
+              beginAtZero: true
+            },
+            y2: {
+              type: 'linear',
               position: 'right',
-              title: {
-                display: true,
-                text: 'Humidity (%)'
-              },
-              grid: {
-                drawOnChartArea: false
-              }
+              beginAtZero: true,
+              grid: { drawOnChartArea: false }
             }
           }
         }
@@ -450,7 +475,7 @@
 
     // Initial fetch and set up periodic updates
     fetchSensorData();
-    setInterval(fetchSensorData, 5000);
+    setInterval(fetchSensorData, 20000); // Update every 20 seconds to match ESP32 interval
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
