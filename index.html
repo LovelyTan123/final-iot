@@ -276,7 +276,7 @@
     aboutLink.addEventListener("click", (e) => { e.preventDefault(); showAbout(); });
 
     function processSensorValue(value, type) {
-      if (value === null || value === undefined) return null;
+      if (value === null || value === undefined || value === "nan" || value === "N/A") return null;
       
       switch(type) {
         case 'light': 
