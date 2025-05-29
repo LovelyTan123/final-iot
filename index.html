@@ -1,203 +1,483 @@
-You said:
-#include <WiFi.h>
-#include <DHT.h>
-#include <HTTPClient.h>
-#include <time.h>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🌿 Hydroponics Monitoring Dashboard</title>
 
-// ====== SENSOR CONFIG ======
-#define LIGHT_SENSOR_PIN 32
-#define DHTPIN 25
-#define PIR_SENSOR_PIN 33
-#define DHTTYPE DHT22
-DHT dht(DHTPIN, DHTTYPE);
+  <!-- Bootstrap & Chart.js -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  
+  <!-- Google Font for cute look -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
-// ====== WIFI CONFIG ======
-const char* ssid = "vivo1906";
-const char* password = "11111111";
-
-// ====== FIREBASE CONFIG ======
-const String firebaseHost = "https://iotfinal-73d37-default-rtdb.asia-southeast1.firebasedatabase.app";
-
-// ====== SENSOR STATE VARIABLES ======
-String lightState = "UNKNOWN";
-int lightIntensity = 0;
-String motionState = "UNKNOWN";
-float temperature = 0.0;
-float humidity = 0.0;
-
-WiFiServer server(80);
-
-unsigned long lastUpdate = 0;
-const unsigned long interval = 20000;  // 20 seconds
-
-// ====== SETUP ======
-void setup() {
-  Serial.begin(115200);
-  delay(3000);
-
-  pinMode(LIGHT_SENSOR_PIN, INPUT);
-  pinMode(PIR_SENSOR_PIN, INPUT);
-  dht.begin();
-
-  Serial.println("Connecting to WiFi...");
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nConnected to WiFi!");
-  Serial.println("IP Address: " + WiFi.localIP().toString());
-
-  // Configure time from NTP
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
-  Serial.print("Synchronizing time");
-  while (!time(nullptr)) {
-    Serial.print(".");
-    delay(1000);
-  }
-  Serial.println("\nTime synchronized!");
-
-  server.begin();
-}
-
-// ====== LOOP ======
-void loop() {
-  if (millis() - lastUpdate >= interval) {
-    readSensors();
-    sendToSerial();
-    sendToFirebase();
-    lastUpdate = millis();
-  }
-  handleWebClient();
-}
-
-// ====== SENSOR FUNCTIONS ======
-int getAverageLight(int samples = 3) {
-  long total = 0;
-  for (int i = 0; i < samples; i++) {
-    total += analogRead(LIGHT_SENSOR_PIN);
-    delay(10);
-  }
-  return total / samples;
-}
-
-String getStableMotionState() {
-  int motionCount = 0;
-  for (int i = 0; i < 5; i++) {
-    if (digitalRead(PIR_SENSOR_PIN) == LOW) {
-      motionCount++;
+  <style>
+    body {
+      background: #fef6fb;
+      color: #333;
+      font-family: 'Poppins', sans-serif;
     }
-    delay(50);
-  }
-  return (motionCount >= 3) ? "DETECTED" : "NOT DETECTED";
-}
 
-bool readDHT() {
-  int attempts = 0;
-  temperature = dht.readTemperature();
-  humidity = dht.readHumidity();
-
-  while ((isnan(temperature) || isnan(humidity)) && attempts < 5) {
-    delay(2000);
-    temperature = dht.readTemperature();
-    humidity = dht.readHumidity();
-    attempts++;
-  }
-  return !(isnan(temperature) || isnan(humidity));
-}
-
-void readSensors() {
-  lightIntensity = getAverageLight();
-  lightState = (lightIntensity < 2000) ? "ACTIVE" : "INACTIVE";
-  motionState = getStableMotionState();
-
-  if (!readDHT()) {
-    Serial.println("DHT read failed. Using fallback values.");
-    temperature = 0.0;
-    humidity = 0.0;
-  }
-}
-
-// ====== TIMESTAMP FUNCTION ======
-String getTimeStamp() {
-  time_t now = time(nullptr);
-  struct tm* timeinfo = localtime(&now);
-
-  char buffer[25];
-  strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
-  return String(buffer);
-}
-
-// ====== SERIAL OUTPUT ======
-void sendToSerial() {
-  Serial.println("=== SENSOR DATA ===");
-  Serial.println("Timestamp: " + getTimeStamp());
-  Serial.println("Light: " + lightState);
-  Serial.println("Light Intensity: " + String(lightIntensity));
-  Serial.println("Motion: " + motionState);
-  Serial.printf("Temp: %.1f °C\n", temperature);
-  Serial.printf("Humidity: %.1f %%\n", humidity);
-  Serial.println("====================\n");
-}
-
-// ====== FIREBASE SENDER ======
-void sendToFirebase() {
-  if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
-    String timestamp = getTimeStamp();
-    String firebasePath = "/sensorData/" + String(millis()) + ".json";
-    String url = firebaseHost + firebasePath;
-
-    http.begin(url);
-    http.addHeader("Content-Type", "application/json");
-
-    String jsonPayload = "{";
-    jsonPayload += "\"timestamp\":\"" + timestamp + "\",";
-    jsonPayload += "\"light\":\"" + lightState + "\",";
-    jsonPayload += "\"lightIntensity\":" + String(lightIntensity) + ",";
-    jsonPayload += "\"motion\":\"" + motionState + "\",";
-    jsonPayload += "\"temperature\":" + String(temperature, 1) + ",";
-    jsonPayload += "\"humidity\":" + String(humidity, 1);
-    jsonPayload += "}";
-
-    int httpResponseCode = http.PUT(jsonPayload);
-    if (httpResponseCode > 0) {
-      Serial.println("Firebase Response Code: " + String(httpResponseCode));
-      Serial.println("Firebase Response: " + http.getString());
-    } else {
-      Serial.println("Error sending to Firebase: " + http.errorToString(httpResponseCode));
+    .navbar {
+      background: linear-gradient(to right, #a1c4fd, #c2e9fb);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
     }
-    http.end();
-  } else {
-    Serial.println("WiFi Disconnected - Cannot send to Firebase");
-  }
+
+    .navbar-brand {
+      font-weight: bold;
+      color: #080101 !important;
+      font-size: 1.5rem;
+    }
+
+    .nav-link {
+      color: #fff !important;
+      font-weight: 500;
+    }
+
+    .nav-link:hover {
+      opacity: 0.9;
+    }
+
+    .card {
+      background-color: #ffffff;
+      border: none;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      transition: 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .sensor-value {
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+
+    .sensor-label {
+      font-size: 1rem;
+      color: #888;
+    }
+
+    .section-header {
+      border-bottom: 2px dashed #f8bbd0;
+      padding-bottom: 10px;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      font-size: 1.4rem;
+      color: #d63384;
+    }
+
+    canvas {
+      background: #fff;
+      padding: 15px;
+      border-radius: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+
+    .nav-tabs .nav-link {
+      border: none;
+      background: #e0f7fa;
+      margin-right: 5px;
+      border-radius: 15px;
+      color: #00796b;
+      font-weight: 500;
+    }
+
+    .nav-tabs .nav-link.active {
+      background: #4dd0e1;
+      color: #fff;
+    }
+
+    #about-section {
+      background-color: #fff;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      margin-top: 30px;
+      display: none;
+    }
+    #about-section img {
+  object-fit: cover;
+  border: 3px solid #c2e9fb;
 }
 
-// ====== LOCAL HTML SERVER ======
-void handleWebClient() {
-  WiFiClient client = server.available();
-  if (client) {
-    Serial.println("New Client Connected.");
-    String request = client.readStringUntil('\r');
-    client.flush();
 
-    String html = "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>";
-    html += "<title>Hydroponics Sensor Data</title></head><body style='font-family:sans-serif; text-align:center'>";
-    html += "<h2>Hydroponics Monitoring System</h2>";
-    html += "<p><b>Light Sensor:</b> " + lightState + "</p>";
-    html += "<p><b>Light Intensity:</b> " + String(lightIntensity) + "</p>";
-    html += "<p><b>Motion Sensor:</b> " + motionState + "</p>";
-    html += "<p><b>Temperature:</b> " + String(temperature, 1) + " °C</p>";
-    html += "<p><b>Humidity:</b> " + String(humidity, 1) + " %</p>";
-    html += "<p><b>Timestamp:</b> " + getTimeStamp() + "</p>";
-    html += "<hr><p><i>Refresh the page to update data</i></p>";
-    html += "</body></html>";
+    /* Cute status colors */
+    .motion-detected { color: #66bb6a; }
+    .motion-not-detected { color: #ef5350; }
+    .light-active { color: #ffd54f; }
+    .light-inactive { color: #b0bec5; }
+  </style>
+</head>
+<body>
 
-    client.println("HTTP/1.1 200 OK");
-    client.println("Content-type:text/html\r\n");
-    client.println(html);
-    delay(1);
-    client.stop();
-    Serial.println("Client Disconnected.");
-  }
-} 
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#"><i class="fas fa-seedling me-2"></i>🌱 Hydro Dashboard</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link active dashboard-link" href="#dashboard">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link about-link" href="#about">About Us</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Live Sensor Section -->
+  <div class="container mt-4" id="dashboard">
+    <div class="section-header">Latest Sensor Readings</div>
+    <div class="row text-center g-4">
+      <div class="col-md-2 col-6">
+        <div class="card p-3">
+          <div class="sensor-label">🌞 Light</div>
+          <div id="light" class="sensor-value">Loading...</div>
+        </div>
+      </div>
+      <div class="col-md-2 col-6">
+        <div class="card p-3">
+          <div class="sensor-label">🔆 Light Intensity</div>
+          <div id="lightIntensity" class="sensor-value">Loading...</div>
+        </div>
+      </div>
+      <div class="col-md-2 col-6">
+        <div class="card p-3">
+          <div class="sensor-label">🚶 Motion</div>
+          <div id="motion" class="sensor-value">Loading...</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="card p-3">
+          <div class="sensor-label">🌡️ Temperature (°C)</div>
+          <div id="temperature" class="sensor-value">Loading...</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="card p-3">
+          <div class="sensor-label">💧 Humidity (%)</div>
+          <div id="humidity" class="sensor-value">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart Section -->
+  <div class="container mt-5">
+    <div class="section-header">📊 Sensor Data History</div>
+<ul class="nav nav-tabs ">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#lightTab">Light</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#motionTab">Motion</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tempTab">Temp & Humidity</button></li>
+    </ul>
+
+    <div class="tab-content text-center">
+      <div class="tab-pane fade show active" id="lightTab"><canvas id="lightChart"></canvas></div>
+      <div class="tab-pane fade" id="motionTab"><canvas id="motionChart"></canvas></div>
+      <div class="tab-pane fade" id="tempTab"><canvas id="tempHumChart"></canvas></div>
+    </div>
+  </div>
+
+<!-- About Section -->
+<div class="container" id="about-section">
+  <div class="section-header">📘 About Us</div>
+
+ <!-- Centered Images with Names and Roles -->
+<div class="text-center mb-4 d-flex justify-content-center gap-4 flex-wrap">
+  <div>
+    <img src="image/santos.jpg" alt="Santos" class="rounded-circle mb-2" width="120" height="120">
+    <div><strong>Victor Santos</strong></div>
+  </div>
+  <div>
+    <img src="image/tan.jpg" alt="Tan" class="rounded-circle mb-2" width="120" height="120">
+    <div><strong>Lovely Tan</strong></div>
+  </div>
+  <div>
+    <img src="image/isidro.jpg" alt="Isidro" class="rounded-circle mb-2" width="120" height="120">
+    <div><strong>Azhly Isidro</strong></div>
+  </div>
+</div>
+
+
+  <p class="lead">
+    Welcome to our Hydroponics Monitoring Dashboard! This little system is here to help us keep track of our garden's light, motion, temperature, and humidity with a sprinkle of love and data. 
+  </p>
+  <p>
+    Our mission? Helping plants grow healthy and strong while making our dashboard look fabulous! 🪴
+  </p>
+</div>
+
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Your existing JS logic for Firebase & Chart rendering here -->
+</body>
+</html>
+
+
+  <script>
+    const dbUrl = "https://iotfinal-73d37-default-rtdb.asia-southeast1.firebasedatabase.app/sensorData.json";
+    const MAX_DATA_POINTS = 20; // Maximum number of data points to show on graphs
+
+    const lightEl = document.getElementById("light");
+    const motionEl = document.getElementById("motion");
+    const tempEl = document.getElementById("temperature");
+    const humEl = document.getElementById("humidity");
+    const lightIntensityEl = document.getElementById("lightIntensity");
+    const aboutSection = document.getElementById("about-section");
+    const dashboardLink = document.querySelector(".dashboard-link");
+    const aboutLink = document.querySelector(".about-link");
+
+    let lightChart, motionChart, tempHumChart;
+    let sensorData = []; // Array to store sensor data
+
+    function formatTime(timestamp) {
+      try {
+        const date = new Date(timestamp);
+        if (isNaN(date.getTime())) {
+          return timestamp;
+        }
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } catch (e) {
+        return timestamp;
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById("dashboard").style.display = "block";
+      document.querySelector(".container.mt-5").style.display = "block";
+      aboutSection.style.display = "none";
+      dashboardLink.classList.add("active");
+      aboutLink.classList.remove("active");
+    }
+
+    function showAbout() {
+      document.getElementById("dashboard").style.display = "none";
+      document.querySelector(".container.mt-5").style.display = "none";
+      aboutSection.style.display = "block";
+      dashboardLink.classList.remove("active");
+      aboutLink.classList.add("active");
+    }
+
+    dashboardLink.addEventListener("click", (e) => { e.preventDefault(); showDashboard(); });
+    aboutLink.addEventListener("click", (e) => { e.preventDefault(); showAbout(); });
+
+    function processSensorValue(value, type) {
+      if (value === null || value === undefined || value === "nan" || value === "N/A") return null;
+      
+      switch(type) {
+        case 'light': 
+          return String(value).toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
+        case 'motion': 
+          return String(value).toLowerCase().includes('detected') ? 'DETECTED' : 'NOT DETECTED';
+        case 'temperature': 
+          return isNaN(parseFloat(value)) ? null : parseFloat(value).toFixed(1);
+        case 'humidity': 
+          return isNaN(parseFloat(value)) ? null : parseFloat(value).toFixed(1);
+        case 'lightIntensity': 
+          return isNaN(parseFloat(value)) ? null : parseFloat(value).toFixed(0);
+        default: 
+          return value;
+      }
+    }
+
+    async function fetchSensorData() {
+      try {
+        const response = await fetch(`${dbUrl}?time=${Date.now()}`);
+        const data = await response.json();
+
+        // Convert object to array of entries and sort by timestamp
+        const entries = Object.entries(data || {}).map(([key, value]) => {
+          return {
+            timestamp: value.timestamp || key,
+            light: value.light,
+            motion: value.motion,
+            temperature: value.temperature,
+            humidity: value.humidity,
+            lightIntensity: value.lightIntensity
+          };
+        }).sort((a, b) => {
+          // Sort by timestamp, handling both formats
+          const timeA = new Date(a.timestamp).getTime();
+          const timeB = new Date(b.timestamp).getTime();
+          return timeA - timeB;
+        });
+
+        // Get the latest reading
+        const latest = entries[entries.length - 1];
+        if (!latest) return; // No data available
+        
+        // Update UI with processed values
+        const processedLight = processSensorValue(latest.light, 'light');
+        lightEl.textContent = processedLight || "N/A";
+        lightEl.className = `sensor-value ${processedLight === 'ACTIVE' ? 'light-active' : 'light-inactive'}`;
+        
+        const processedMotion = processSensorValue(latest.motion, 'motion');
+        motionEl.textContent = processedMotion || "N/A";
+        motionEl.className = `sensor-value ${processedMotion === 'DETECTED' ? 'motion-detected' : 'motion-not-detected'}`;
+        
+        const processedTemp = processSensorValue(latest.temperature, 'temperature');
+        tempEl.textContent = processedTemp !== null ? `${processedTemp} °C` : "N/A";
+        
+        const processedHum = processSensorValue(latest.humidity, 'humidity');
+        humEl.textContent = processedHum !== null ? `${processedHum} %` : "N/A";
+        
+        const processedLightIntensity = processSensorValue(latest.lightIntensity, 'lightIntensity');
+        lightIntensityEl.textContent = processedLightIntensity || "N/A";
+
+        // Update sensor data array
+        sensorData.push(latest);
+        if (sensorData.length > MAX_DATA_POINTS) {
+          sensorData.shift(); // Remove oldest data point
+        }
+
+        // Render charts with the updated data
+        renderCharts(sensorData);
+      } catch (err) {
+        console.error("Error fetching sensor data:", err);
+      }
+    }
+
+    function renderCharts(entries) {
+      const labels = entries.map(entry => formatTime(entry.timestamp));
+      const lightData = entries.map(entry => processSensorValue(entry.light, 'light') === 'ACTIVE' ? 1 : 0);
+      const motionData = entries.map(entry => processSensorValue(entry.motion, 'motion') === 'DETECTED' ? 1 : 0);
+      const tempData = entries.map(entry => parseFloat(processSensorValue(entry.temperature, 'temperature')));
+      const humData = entries.map(entry => parseFloat(processSensorValue(entry.humidity, 'humidity')));
+      const lightIntensityData = entries.map(entry => parseFloat(processSensorValue(entry.lightIntensity, 'lightIntensity')));
+
+      // Destroy existing charts if they exist
+      if (lightChart) lightChart.destroy();
+      if (motionChart) motionChart.destroy();
+      if (tempHumChart) tempHumChart.destroy();
+
+      // Light Chart (binary: 1 = ACTIVE, 0 = INACTIVE)
+      lightChart = new Chart(document.getElementById("lightChart"), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Light Status (1=Active)',
+            data: lightData,
+            backgroundColor: 'rgba(255, 193, 7, 0.2)',
+            borderColor: 'rgba(255, 193, 7, 1)',
+            borderWidth: 2,
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          animation: {
+            duration: 0 // Disable animation for smoother updates
+          },
+          scales: {
+            y: {
+              ticks: {
+                callback: (val) => val === 1 ? 'ACTIVE' : 'INACTIVE'
+              },
+              beginAtZero: true,
+              max: 1
+            }
+          }
+        }
+      });
+
+      // Motion Chart (binary: 1 = DETECTED, 0 = NOT DETECTED)
+      motionChart = new Chart(document.getElementById("motionChart"), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Motion (1=Detected)',
+            data: motionData,
+            backgroundColor: 'rgba(76, 175, 80, 0.2)',
+            borderColor: 'rgba(76, 175, 80, 1)',
+            borderWidth: 2,
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          animation: {
+            duration: 0 // Disable animation for smoother updates
+          },
+          scales: {
+            y: {
+              ticks: {
+                callback: (val) => val === 1 ? 'DETECTED' : 'NONE'
+              },
+              beginAtZero: true,
+              max: 1
+            }
+          }
+        }
+      });
+
+      // Temperature & Humidity Chart
+      tempHumChart = new Chart(document.getElementById("tempHumChart"), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Temperature (°C)',
+              data: tempData,
+              borderColor: 'rgba(244, 67, 54, 1)',
+              backgroundColor: 'rgba(244, 67, 54, 0.2)',
+              borderWidth: 2,
+              tension: 0.4,
+              fill: true,
+              yAxisID: 'y1'
+            },
+            {
+              label: 'Humidity (%)',
+              data: humData,
+              borderColor: 'rgba(33, 150, 243, 1)',
+              backgroundColor: 'rgba(33, 150, 243, 0.2)',
+              borderWidth: 2,
+              tension: 0.4,
+              fill: true,
+              yAxisID: 'y2'
+            }
+          ]
+        },
+        options: {
+          animation: {
+            duration: 0 // Disable animation for smoother updates
+          },
+          scales: {
+            y1: {
+              type: 'linear',
+              position: 'left',
+              beginAtZero: true
+            },
+            y2: {
+              type: 'linear',
+              position: 'right',
+              beginAtZero: true,
+              grid: { drawOnChartArea: false }
+            }
+          }
+        }
+      });
+    }
+
+    // Initial fetch and set up periodic updates
+    fetchSensorData();
+    setInterval(fetchSensorData, 20000); // Update every 20 seconds to match ESP32 interval
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
